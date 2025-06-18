@@ -1,3 +1,7 @@
 openai
 agno
 python-dotenv
+gradio
+pandas
+plotly
+matplotlib
