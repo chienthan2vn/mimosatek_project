@@ -44,10 +44,10 @@ def get_reflection_agent(
             2. Whether the **waiting time before irrigation** was appropriate
 
             ## Input Format
-            - `input_data`: includes `T_chờ_phút` (waiting time in minutes)
+            - `input_data`: includes `time_waiting` (waiting time in minutes)
             - `output_data`: includes:
-            - `T_đầy_giây` (full irrigation time in seconds)
-            - `EC_đo_được` (measured EC value)
+            - `time_full` (full irrigation time in seconds)
+            - `EC` (measured EC value)
 
             ## Output Requirements
             - Return **only one string comment**
@@ -60,7 +60,6 @@ def get_reflection_agent(
             > "The current EC is below the target. Consider reducing waiting time or increasing solution concentration. Full irrigation was fast and needs no change."
 
         """),
-        tools = [GetLastIrrigationDataTool()],
         markdown = True,
         add_datetime_to_instructions = True,
         debug_mode = debug_mode

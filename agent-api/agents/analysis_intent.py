@@ -51,7 +51,7 @@ def get_analysis_intent_agent(
                 ```json
                 {
                 "status": "success" | "adjust",
-                "delay": -1 | 0 | >0
+                "delay": <0 | 0 | >0
                 }
 
             ---
@@ -59,15 +59,16 @@ def get_analysis_intent_agent(
             ### 📌 Field Descriptions
 
                 - **status**:
-                - `"success"` → The user agrees with the proposed irrigation.
-                - `"adjust"` → The user disagrees and requests a different irrigation time.
+                    - `"success"` → The user agrees with the proposed irrigation.
+                    - `"adjust"` → The user disagrees and requests a different irrigation time.
 
                 - **delay**:
-                - `0` → The user agrees to irrigate **immediately**.
-                - `>0` → The user disagrees but specifies a **delay time in minutes**.  
-                    **Example:** `"Let’s water in 20 minutes"` → `delay = 20`
-                - `-1` → The user disagrees but **does not specify** a delay time.  
-                    **Example:** `"Not now, maybe later."` → `delay = -1`
+                    - `0` → The user agrees to irrigate **immediately**.
+                    - `>0` → The user wants to **delay** the irrigation (irrigate **later**).
+                        - **Example:** `"Let’s water in 20 minutes"` → `delay = 20`
+                    - `<0` → The user wants to irrigate **earlier** than the proposed time.
+                        - **Example:** `"Can we water 10 minutes earlier?"` → `delay = -10`
+
 
         """),
         response_model = AnalysisOutput,

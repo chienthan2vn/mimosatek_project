@@ -12,13 +12,14 @@ from agno.storage.agent.postgres import PostgresAgentStorage
 from agno.vectordb.pgvector import PgVector, SearchType
 
 from db.session import db_url
-from tools.tool import GetRecentIrrigationDataTool, GetCurrentEnviromentTools, GetWeatherForecastTool
+from tools.tool import GetRecentIrrigationDataTool, GetCurrentEnviromentTools, GetWeatherForecastTool, GetLastReflectionTools
 
 
 
 class PlantOutput(BaseModel):
-    T_chờ_đề_xuất: int  # Recommended waiting time in minutes
-    lý_do: str  # Reasoning for the recommendation
+    time_waiting: int  # Recommended waiting time in minutes
+    next_time_watering: str # Next irrigation time in ISO format
+    reason: str  # Reasoning for the recommendation
 
 def get_plant_agent(
     model_id: str = "gpt-4.1",
@@ -66,8 +67,9 @@ def get_plant_agent(
             ## 🧠 Your Task
             Based on both qualitative reflections and quantitative data, calculate and recommend the next waiting time (T_chờ) to help regulate EC toward the 4.0 target.
         """),
-        tools = [GetRecentIrrigationDataTool(), GetCurrentEnviromentTools(), GetWeatherForecastTool()],
+        tools = [GetLastReflectionTools(), GetRecentIrrigationDataTool(), GetCurrentEnviromentTools(), GetWeatherForecastTool()],
         add_datetime_to_instructions = True,
         response_model = PlantOutput,
+        show_tool_calls = True,
         debug_mode = debug_mode
     )

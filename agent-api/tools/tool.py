@@ -71,7 +71,39 @@ class GetRecentIrrigationDataTool(Toolkit):
         except Exception as e:
             logger.error(f"Error retrieving recent irrigation data: {e}")
             raise RuntimeError(f"Failed to retrieve recent irrigation data: {e}")
-    
+
+class GetLastReflectionTools(Toolkit):
+    """Tool to retrieve the last reflection data."""
+
+    def __init__(self):
+        super().__init__(name = "get_last_reflection_data")
+        self.register(self.get_last_reflection_data)
+        logger.info("GetLastReflectionTools initialized successfully.")
+
+    def get_last_reflection_data(self) -> Dict[str, Any]:
+        """
+        Retrieve the last reflection data from the database.
+        
+        Args:
+            self: The instance of the tool.
+
+        Returns:
+            dict: A dictionary containing the last reflection data.
+        """
+        logger.info("Retrieving last reflection data...")
+        
+        try:
+            db = Database()
+            logger.debug("Database connection established.")
+            last_reflection = db.get_last_reflection()
+            if not last_reflection:
+                logger.warning("No reflection records found.")
+                return {}
+            logger.info(f"Last reflection data retrieved: {last_reflection}")
+            return last_reflection
+        except Exception as e:
+            logger.error(f"Error retrieving last reflection data: {e}")
+            raise RuntimeError(f"Failed to retrieve last reflection data: {e}") 
 
 class GetCurrentEnviromentTools(Toolkit):
     """Tool to retrieve current environment sensors data."""
