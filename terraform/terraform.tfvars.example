@@ -1,0 +1,28 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+# Project Configuration
+project_name = "mimosatek"
+environment  = "dev"
+owner        = "Your Team"
+
+# AWS Configuration
+aws_region                = "ap-southeast-1"
+terraform_state_bucket   = "your-terraform-state-bucket"
+
+# Network Configuration
+vpc_cidr        = "10.0.0.0/16"
+public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnets = ["10.0.11.0/24", "10.0.12.0/24"]
+
+# EKS Configuration
+kubernetes_version      = "1.27"
+node_group_desired_size = 2
+node_group_max_size     = 4
+node_group_min_size     = 1
+node_instance_types     = ["t3.medium"]
+
+# Database Configuration
+enable_rds    = true
+db_name       = "mimosatek_db"
+db_username   = "mimosatek_user"
+db_password   = "change-this-password"
