@@ -1,17 +1,13 @@
 from textwrap import dedent
 from typing import Optional
+from pydantic import BaseModel
 
-from agno.agent import Agent, AgentKnowledge
-from agno.embedder.openai import OpenAIEmbedder
-from agno.knowledge.url import UrlKnowledge
-from agno.memory.v2.db.postgres import PostgresMemoryDb
-from agno.memory.v2.memory import Memory
+from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from agno.storage.agent.postgres import PostgresAgentStorage
-from agno.vectordb.pgvector import PgVector, SearchType
 
-from db.session import db_url
-from tools.tool import GetLastIrrigationDataTool
+
+class ReflectionOutput(BaseModel):
+    reflection_text: str
 
 def get_reflection_agent(
     model_id: str = "gpt-4.1",
@@ -44,9 +40,8 @@ def get_reflection_agent(
             2. Whether the **waiting time before irrigation** was appropriate
 
             ## Input Format
-            - `input_data`: includes `time_waiting` (waiting time in minutes)
-            - `output_data`: includes:
-            - `time_full` (full irrigation time in seconds)
+            - `time_waiting` (waiting time before irrigation in minutes) 
+            - `time_full` (full irrigation time in minutes)
             - `EC` (measured EC value)
 
             ## Output Requirements
@@ -62,5 +57,6 @@ def get_reflection_agent(
         """),
         markdown = True,
         add_datetime_to_instructions = True,
-        debug_mode = debug_mode
+        debug_mode = debug_mode,
+        response_model = ReflectionOutput,
     )

@@ -2,24 +2,19 @@ from textwrap import dedent
 from typing import Optional
 from pydantic import BaseModel
 
-from agno.agent import Agent, AgentKnowledge
-from agno.embedder.openai import OpenAIEmbedder
-from agno.knowledge.url import UrlKnowledge
-from agno.memory.v2.db.postgres import PostgresMemoryDb
-from agno.memory.v2.memory import Memory
+from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from agno.storage.agent.postgres import PostgresAgentStorage
-from agno.vectordb.pgvector import PgVector, SearchType
 
 from db.session import db_url
-from tools.tool import GetRecentIrrigationDataTool, GetCurrentEnviromentTools, GetWeatherForecastTool, GetLastReflectionTools
-
+from tools.tool import GetRecentIrrigationDataTool, GetCurrentEnviromentTool, GetWeatherForecastTool, GetLastIrrigationDataTool
+from tools.sensor_manager import EnvironmentSensorData
 
 
 class PlantOutput(BaseModel):
     time_waiting: int  # Recommended waiting time in minutes
     next_time_watering: str # Next irrigation time in ISO format
     reason: str  # Reasoning for the recommendation
+    environ_sensor_data: EnvironmentSensorData  # Current environment sensor data
 
 def get_plant_agent(
     model_id: str = "gpt-4.1",
@@ -40,34 +35,41 @@ def get_plant_agent(
             # 🌱 Plant Agent – Instructions
 
             ## 🎯 Primary Goal
-            Adjust the waiting time (T_chờ) to bring the EC value closer to the target of **4.0**.
+            Adjust the waiting time (`T_chờ`) to bring the EC value closer to the target of **4.0**.
 
-            ## 📥 Provided Data
-            You are given the following contextual information:
+            ## 📥 Required Inputs & Corresponding Tools
 
-            ### Reflection from the most recent irrigation cycle
-            - **last_reflection**: Qualitative analysis and insights from the previous irrigation cycle
+        To complete your task, you will need the following contextual inputs, which will be fetched automatically via the associated tools:
 
-            ### Recent operational history
-            - **history_summary**: JSON data containing recent irrigation cycles, EC values, and system performance metrics
+            - **last_reflection** → *(From `GetLastIrrigationDataTool`)*  
+            A qualitative summary and insights from the most recent irrigation cycle.
 
-            ### Current environmental data
-            - **current_env**: JSON data with real-time sensor readings including temperature, humidity, and current EC levels
+            - **history_summary** → *(From `GetRecentIrrigationDataTool`)*  
+            A structured JSON summary of recent irrigation cycles, including EC trends and system adjustments.
 
-            ### Weather forecast
-            - **forecast**: Weather prediction data that may affect irrigation planning
+            - **current_env** → *(From `GetCurrentEnviromentTool`)*  
+            Real-time environmental data such as temperature, humidity, and the current EC value from sensors.
+
+            - **forecast** → *(From `GetWeatherForecastTool`)*  
+            Weather prediction data that may influence the irrigation schedule (e.g., upcoming rainfall or heatwaves).
 
             ## ⚖️ Important Rules
 
-            - **If EC > 4.0** → Decrease the waiting time to irrigate earlier
-            - **If EC < 4.0** → Increase the waiting time to allow more evaporation
-            - **Valid range for T_chờ**: from 60 to 300 minutes
-            - **Adjust gradually** – avoid drastic changes between cycles
+                - **If EC > 4.0** → Decrease the waiting time to irrigate earlier.  
+                - **If EC < 4.0** → Increase the waiting time to allow more evaporation.  
+                - **Valid range for `T_chờ`**: between **60 and 300 minutes**.  
+                - **Adjust gradually** – avoid large fluctuations between cycles to maintain crop stability.
 
             ## 🧠 Your Task
-            Based on both qualitative reflections and quantitative data, calculate and recommend the next waiting time (T_chờ) to help regulate EC toward the 4.0 target.
+
+                Analyze all provided data (qualitative and quantitative) to determine and recommend the optimal waiting time (`T_chờ`) for the next irrigation cycle.
+
         """),
-        tools = [GetLastReflectionTools(), GetRecentIrrigationDataTool(), GetCurrentEnviromentTools(), GetWeatherForecastTool()],
+        tools = [
+            GetLastIrrigationDataTool(),
+            GetRecentIrrigationDataTool(), 
+            GetCurrentEnviromentTool(), 
+            GetWeatherForecastTool()],
         add_datetime_to_instructions = True,
         response_model = PlantOutput,
         show_tool_calls = True,

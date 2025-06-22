@@ -2,12 +2,11 @@ from enum import Enum
 from logging import getLogger
 from typing import AsyncGenerator, List, Optional
 
-from agno.agent import Agent, AgentKnowledge
+from agno.agent import Agent
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from agents.agno_assist import get_agno_assist_knowledge
 from agents.selector import AgentType, get_agent, get_available_agents
 
 logger = getLogger(__name__)
@@ -101,34 +100,4 @@ async def create_agent_run(agent_id: AgentType, body: RunRequest):
         return response.content
 
 
-@agents_router.post("/{agent_id}/knowledge/load", status_code=status.HTTP_200_OK)
-async def load_agent_knowledge(agent_id: AgentType):
-    """
-    Loads the knowledge base for a specific agent.
 
-    Args:
-        agent_id: The ID of the agent to load knowledge for.
-
-    Returns:
-        A success message if the knowledge base is loaded.
-    """
-    agent_knowledge: Optional[AgentKnowledge] = None
-
-    if agent_id == AgentType.AGNO_ASSIST:
-        agent_knowledge = get_agno_assist_knowledge()
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Agent {agent_id} does not have a knowledge base.",
-        )
-
-    try:
-        await agent_knowledge.aload(upsert=True)
-    except Exception as e:
-        logger.error(f"Error loading knowledge base for {agent_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to load knowledge base for {agent_id}.",
-        )
-
-    return {"message": f"Knowledge base for {agent_id} loaded successfully."}

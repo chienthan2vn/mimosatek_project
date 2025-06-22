@@ -2,16 +2,8 @@ from textwrap import dedent
 from typing import Optional
 from pydantic import BaseModel
 
-from agno.agent import Agent, AgentKnowledge
-from agno.embedder.openai import OpenAIEmbedder
-from agno.knowledge.url import UrlKnowledge
-from agno.memory.v2.db.postgres import PostgresMemoryDb
-from agno.memory.v2.memory import Memory
+from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from agno.storage.agent.postgres import PostgresAgentStorage
-from agno.vectordb.pgvector import PgVector, SearchType
-
-from db.session import db_url
 
 class AnalysisOutput(BaseModel):
     status: str = "success"  # Status of the analysis

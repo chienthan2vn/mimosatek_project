@@ -1,21 +1,27 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from dataclasses import dataclass, asdict
 
 from agno.tools import Toolkit
 from agno.utils.log import logger
 
-from tools.components import Database, EnvironmentSensor
-
+from tools.components import PostgreSQLDatabase
+from tools.sensor_manager import SensorEnvironmentManager
+from tools.weather_forecast import WeatherForecast
 
 class GetLastIrrigationDataTool(Toolkit):
     """Tool to retrieve the last irrigation cycle data."""
 
-    def __init__(self):
+    def __init__(
+        self
+    ) -> None:
         super().__init__(name = "get_last_irrigation_data", description="Retrieve the last irrigation cycle data.")
         self.register(self.get_last_irrigation_data)
         logger.info("GetLastIrrigationDataTool initialized.")
         
-    def get_last_irrigation_data(self) -> Dict[str, Any]:
+    def get_last_irrigation_data(
+        self,
+        table_name: str
+    ) -> Dict[str, Any]:
         """"
         Retrieve the last irrigation cycle data from the database.
         
@@ -27,9 +33,9 @@ class GetLastIrrigationDataTool(Toolkit):
         """
         logger.info("Retrieving last irrigation cycle data...")
         try:
-            db = Database()
+            db = PostgreSQLDatabase()
             logger.debug("Database connection established.")
-            last_record = db.get_last_record()
+            last_record = db.get_last_record(table_name = table_name)
             if not last_record:
                 logger.warning("No irrigation records found.")
                 return last_record
@@ -43,12 +49,18 @@ class GetLastIrrigationDataTool(Toolkit):
 class GetRecentIrrigationDataTool(Toolkit):
     """Tool to retrieve recent irrigation cycle data."""
 
-    def __init__(self):
-        super().__init__(name = "get_recent_irrigation_data")
+    def __init__(
+        self
+    ):
+        super().__init__(name = "get_recent_irrigation_data")    
         self.register(self.get_recent_irrigation_data)
         logger.info(f"GetRecentIrrigationDataTool initialized successfully.")
 
-    def get_recent_irrigation_data(self, num_records: int = 5) -> Dict[str, Any]:
+    def get_recent_irrigation_data(
+        self,
+        table_name: str,
+        num_records: int = 5
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve recent irrigation cycle data from the database.
         
@@ -60,9 +72,9 @@ class GetRecentIrrigationDataTool(Toolkit):
         """
         logger.info(f"Retrieving irrigation data recent...")
         try:
-            db = Database()
+            db = PostgreSQLDatabase()
             logger.debug("Database connection established.")
-            recent_records = db.get_recent_records(num_records = num_records)
+            recent_records = db.get_recent_records(table_name = table_name, num_records = num_records)
             if not recent_records:
                 logger.warning("No recent irrigation records found.")
                 return recent_records
@@ -72,40 +84,8 @@ class GetRecentIrrigationDataTool(Toolkit):
             logger.error(f"Error retrieving recent irrigation data: {e}")
             raise RuntimeError(f"Failed to retrieve recent irrigation data: {e}")
 
-class GetLastReflectionTools(Toolkit):
-    """Tool to retrieve the last reflection data."""
 
-    def __init__(self):
-        super().__init__(name = "get_last_reflection_data")
-        self.register(self.get_last_reflection_data)
-        logger.info("GetLastReflectionTools initialized successfully.")
-
-    def get_last_reflection_data(self) -> Dict[str, Any]:
-        """
-        Retrieve the last reflection data from the database.
-        
-        Args:
-            self: The instance of the tool.
-
-        Returns:
-            dict: A dictionary containing the last reflection data.
-        """
-        logger.info("Retrieving last reflection data...")
-        
-        try:
-            db = Database()
-            logger.debug("Database connection established.")
-            last_reflection = db.get_last_reflection()
-            if not last_reflection:
-                logger.warning("No reflection records found.")
-                return {}
-            logger.info(f"Last reflection data retrieved: {last_reflection}")
-            return last_reflection
-        except Exception as e:
-            logger.error(f"Error retrieving last reflection data: {e}")
-            raise RuntimeError(f"Failed to retrieve last reflection data: {e}") 
-
-class GetCurrentEnviromentTools(Toolkit):
+class GetCurrentEnviromentTool(Toolkit):
     """Tool to retrieve current environment sensors data."""
 
     def __init__(self):
@@ -126,10 +106,10 @@ class GetCurrentEnviromentTools(Toolkit):
         logger.info("Retrieving current environment data...")
         
         try:
-            sensors = EnvironmentSensor()
+            sensors = SensorEnvironmentManager()
             logger.debug("EnvironmentSensor instance created.")
             current_env = sensors.get_current_environment()
-            current_env_dict = asdict(current_env)
+            current_env_dict = current_env.model_dump()
             logger.info(f"Current environment data retrieved: {current_env_dict}")
             return current_env_dict
         except Exception as e:
@@ -158,9 +138,10 @@ class GetWeatherForecastTool(Toolkit):
         logger.info("Retrieving weather forecast data...")
         
         try:
-            sensors = EnvironmentSensor()
+            weather = WeatherForecast()
             logger.debug("EnvironmentSensor instance created.")
-            forecast = sensors.get_weather_forecast()
+            forecast = weather.get_weather_forecast()
+            forecast = forecast.model_dump()
             logger.info(f"Weather forecast data retrieved: {forecast}")
             return forecast
         except Exception as e:

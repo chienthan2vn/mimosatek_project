@@ -1,15 +1,15 @@
 from enum import Enum
 from typing import List, Optional
 
-from agents.agno_assist import get_agno_assist
-from agents.finance_agent import get_finance_agent
-from agents.web_agent import get_web_agent
+from agents.analysis_intent import get_analysis_intent_agent
+from agents.reflection_agent import get_reflection_agent
+from agents.plant_agent import get_plant_agent
 
 
 class AgentType(Enum):
-    WEB_AGENT = "web_agent"
-    AGNO_ASSIST = "agno_assist"
-    FINANCE_AGENT = "finance_agent"
+    ANALYSIS_INTENT_AGENT = "analysis_intent_agent"
+    REFLECTION_AGENT = "reflection_agent"
+    PLANT_AGENT = "plant_agent"
 
 
 def get_available_agents() -> List[str]:
@@ -24,11 +24,25 @@ def get_agent(
     session_id: Optional[str] = None,
     debug_mode: bool = True,
 ):
-    if agent_id == AgentType.WEB_AGENT:
-        return get_web_agent(model_id=model_id, user_id=user_id, session_id=session_id, debug_mode=debug_mode)
-    elif agent_id == AgentType.AGNO_ASSIST:
-        return get_agno_assist(model_id=model_id, user_id=user_id, session_id=session_id, debug_mode=debug_mode)
-    elif agent_id == AgentType.FINANCE_AGENT:
-        return get_finance_agent(model_id=model_id, user_id=user_id, session_id=session_id, debug_mode=debug_mode)
-
+    if agent_id == AgentType.ANALYSIS_INTENT_AGENT:
+        return get_analysis_intent_agent(
+            model_id=model_id,
+            user_id=user_id,
+            session_id=session_id,
+            debug_mode=debug_mode,
+        )
+    elif agent_id == AgentType.REFLECTION_AGENT:
+        return get_reflection_agent(
+            model_id=model_id,
+            user_id=user_id,
+            session_id=session_id,
+            debug_mode=debug_mode,
+        )
+    elif agent_id == AgentType.PLANT_AGENT:
+        return get_plant_agent(
+            model_id=model_id,
+            user_id=user_id,
+            session_id=session_id,
+            debug_mode=debug_mode,
+        )
     raise ValueError(f"Agent: {agent_id} not found")
