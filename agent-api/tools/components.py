@@ -9,11 +9,6 @@ import random
 import psycopg2
 from loguru import logger
 
-logger.add(
-    "logs/detailed.log",
-    format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
-    level="INFO"
-)
 
 
 class EnvironmentSensorData(BaseModel):
@@ -50,7 +45,7 @@ class PostgreSQLDatabase:
         self,
     ) -> None:
         
-        conn = psycopg2.connect(
+        self.conn = psycopg2.connect(
             host = os.getenv("DB_HOST", "localhost"),
             port = os.getenv("DB_PORT", "35432"),
             database = os.getenv("DB_NAME", "mimosatek_db"),
@@ -58,7 +53,7 @@ class PostgreSQLDatabase:
             password = os.getenv("DB_PASSWORD", "mimosatek_password")
         )
         
-        self.cur = conn.cursor()
+        self.cur = self.conn.cursor()
     
         logger.info("PostgreSQLDatabase initialized successfully.")
     
@@ -119,17 +114,19 @@ class PostgreSQLDatabase:
             record (WateringScheduleTableColumns): The record to add.
         """
         query = """
-            INSERT INTO watering_schedule (time_waiting, next_time_watering, watering_traffic, environ_sensor_data, reason)
+            INSERT INTO wateringschedule (time_waiting, time_watering, watering_traffic, environ_sensor_data, reason)
             VALUES (%s, %s, %s, %s, %s)
         """
         self.cur.execute(query, (
             record.time_waiting,
             record.next_time_watering,
             record.watering_traffic,
-            json.dumps(record.environ_sensor_data),
+            json.dumps(record.environ_sensor_data.model_dump()),
             record.reason
         ))
-        logger.info(f"Record added to watering_schedule: {asdict(record)}")
+        
+        self.conn.commit()  # Commit the transaction
+        logger.info(f"Record added to wateringschedule: {record.model_dump()}")
     
     def add_record_to_reflection_table(
         self,
@@ -146,7 +143,8 @@ class PostgreSQLDatabase:
             VALUES (%s)
         """
         self.cur.execute(query, (record.reflection_text,))
-        logger.info(f"Record added to reflection: {asdict(record)}")
+        self.conn.commit()  # Commit the transaction
+        logger.info(f"Record added to reflection: {record.model_dump()}")
     
     def add_record_to_outputdata_table(
         self,
@@ -159,11 +157,12 @@ class PostgreSQLDatabase:
             record (OuputDataTableColumns): The record to add.
         """
         query = """
-            INSERT INTO output_data (time_full, EC)
+            INSERT INTO outputdata (time_full, EC)
             VALUES (%s, %s)
         """
         self.cur.execute(query, (record.time_full, record.EC))
-        logger.info(f"Record added to output_data: {asdict(record)}")
+        self.conn.commit()  # Commit the transaction
+        logger.info(f"Record added to output_data: {record.model_dump()}")
     
     
     def get_last_record(
@@ -250,3 +249,33 @@ class PostgreSQLDatabase:
         self.cur.close()
         logger.info("Database connection closed.")
     
+
+
+# Test the PostgreSQLDatabase class
+if __name__ == "__main__":
+    db = PostgreSQLDatabase()
+    
+    # Get all tables
+    tables = db.get_all_table()
+    
+    # Get columns of a specific table
+    if tables:
+        columns = db.get_columns_of_table(tables[0])
+    
+    # Add a record to watering_schedule table
+    if tables:
+        record = WateringScheduleTableColumns(
+            time_waiting=random.randint(1, 60),
+            next_time_watering=datetime.now().isoformat(),
+            watering_traffic="low",
+            environ_sensor_data=EnvironmentSensorData(
+                temperature=random.uniform(15.0, 35.0),
+                humidity=random.uniform(30.0, 90.0),
+                et0=random.uniform(0.1, 5.0)
+            ),
+            reason="Routine check"
+        )
+        db.add_record_to_wateringschedule_table(record)
+    
+    # Close the database connection
+    db.close_connection()

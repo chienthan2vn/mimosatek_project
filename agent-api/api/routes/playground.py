@@ -1,20 +1,19 @@
 from agno.playground import Playground
 
-from agents.agno_assist import get_agno_assist
-from agents.finance_agent import get_finance_agent
-from agents.web_agent import get_web_agent
+from agents.analysis_intent import get_analysis_intent_agent
+from agents.plant_agent import get_plant_agent
+from agents.reflection_agent import get_reflection_agent
 
 ######################################################
 ## Routes for the Playground Interface
 ######################################################
 
 # Get Agents to serve in the playground
-web_agent = get_web_agent(debug_mode=True)
-agno_assist = get_agno_assist(debug_mode=True)
-finance_agent = get_finance_agent(debug_mode=True)
-
+analysis_intent_agent = get_analysis_intent_agent()
+plant_agent = get_plant_agent()
+reflection_agent = get_reflection_agent()
 # Create a playground instance
-playground = Playground(agents=[web_agent, agno_assist, finance_agent])
+playground = Playground(agents=[analysis_intent_agent, plant_agent, reflection_agent])
 
 # Get the router for the playground
 playground_router = playground.get_async_router()

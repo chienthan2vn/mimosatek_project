@@ -37,9 +37,11 @@ pandas==2.2.3
 peewee==3.18.1
 pgvector==0.4.1
 platformdirs==4.3.8
+loguru==0.7.3
 primp==0.15.0
 protobuf==5.29.4
 psycopg==3.2.7
+psycopg2-binary==2.9.10
 psycopg-binary==3.2.7
 pycparser==2.22
 pydantic==2.11.4

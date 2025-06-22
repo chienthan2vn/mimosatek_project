@@ -14,7 +14,7 @@ class GetLastIrrigationDataTool(Toolkit):
     def __init__(
         self
     ) -> None:
-        super().__init__(name = "get_last_irrigation_data", description="Retrieve the last irrigation cycle data.")
+        super().__init__(name = "get_last_irrigation_data")
         self.register(self.get_last_irrigation_data)
         logger.info("GetLastIrrigationDataTool initialized.")
         
