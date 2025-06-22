@@ -96,10 +96,10 @@ class Database:
         self._save_data()
         print(f"💾 Đã lưu bản ghi #{record.id}")
         
-    def get_recent_records(self, days: int = 3) -> List[Dict]:
+    def get_recent_records(self, num_records: int = 3) -> List[Dict]:
         """Lấy bản ghi trong N ngày gần nhất"""
         # Đơn giản hóa: lấy N bản ghi cuối cùng
-        return self.data[-days*8:] if self.data else []
+        return self.data[-num_records:] if self.data else []
         
     def get_last_record(self) -> Optional[Dict]:
         """Lấy bản ghi cuối cùng"""

@@ -1,5 +1,5 @@
 # Bỏ qua tất cả file .log
-*.log
+*.log1
 
 # Bỏ qua thư mục build/
 build/
