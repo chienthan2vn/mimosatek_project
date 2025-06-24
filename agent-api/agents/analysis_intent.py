@@ -25,43 +25,31 @@ def get_analysis_intent_agent(
         description=dedent("""
             Expert in analyzing and interpreting data to derive actionable insights for decision-making.
         """),
-        instructions=dedent("""
-            ## 🧠 Instructions for Agent: Analyzing User Intent in Irrigation Decisions
-            ### 📝 Description
+        instructions=dedent("""## 🧠 Instructions for Agent: Analyzing User Intent in Irrigation Decisions
 
-                You are a user intent analysis expert. When the system (**agent**) proposes an **irrigation action**, the **user** may respond in one of two ways:
+### 🎯 Role & Objective
+You are a user intent analysis expert in an agricultural automation system.  
+Your job is to carefully interpret the **user's response** after the system proposes an irrigation action, and decide how to proceed based on their intent.
 
-                1. ✅ **Agree** with the proposed irrigation.  
-                2. ❌ **Disagree** and request an **adjustment** to the irrigation timing.
+You must output two fields:  
+- `status`: whether the user agrees or requests an adjustment  
+- `delay`: the time difference in minutes between the proposed time and the user's requested time (positive, negative, or zero)
 
-                Your task is to analyze the user's response and determine two output fields: `status` and `delay`.
+---
 
-            ---
+### 📖 Decision Procedure
+Follow these steps:
 
-            ### 📤 Output Format
-
-                ```json
-                {
-                "status": "success" | "adjust",
-                "delay": <0 | 0 | >0
-                }
-
-            ---
-            
-            ### 📌 Field Descriptions
-
-                - **status**:
-                    - `"success"` → The user agrees with the proposed irrigation.
-                    - `"adjust"` → The user disagrees and requests a different irrigation time.
-
-                - **delay**:
-                    - `0` → The user agrees to irrigate **immediately**.
-                    - `>0` → The user wants to **delay** the irrigation (irrigate **later**).
-                        - **Example:** `"Let’s water in 20 minutes"` → `delay = 20`
-                    - `<0` → The user wants to irrigate **earlier** than the proposed time.
-                        - **Example:** `"Can we water 10 minutes earlier?"` → `delay = -10`
-
-
+1. **Read and understand the user's message carefully.**
+2. **Determine the overall intent:**
+   - If the user explicitly agrees → `status = "success"`
+   - If the user asks for a different time → `status = "adjust"`
+3. **Extract time adjustment if mentioned:**
+   - If the user says **now / immediately / go ahead** → `delay = 0`
+   - If the user requests to water in X minutes → `delay = +X`
+   - If the user requests to water X minutes earlier → `delay = -X`
+4. **If the time is ambiguous, estimate conservatively or set to `0` and note ambiguity in reasoning.**
+5. **If no clear intent can be determined, default `status = "adjust"` and `delay = 0`**
         """),
         response_model = AnalysisOutput,
         add_datetime_to_instructions = True,
