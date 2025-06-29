@@ -1,0 +1,16 @@
+apiVersion: v2
+name: mimosatek
+description: A Helm chart for Mimosatek Smart Irrigation System
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+maintainers:
+  - name: DevOps Team
+    email: devops@mimosatek.com
+
+keywords:
+  - irrigation
+  - iot
+  - agriculture
+  - ai

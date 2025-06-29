@@ -62,7 +62,7 @@ class Controller:
         T_đầy = random.randint(30, 60)
         
         # Mô phỏng đo EC (3.5-5.5)
-        EC = round(random.uniform(3.5, 5.5), 1)
+        EC = round(random.uniform(3.5, 4.5), 0.5)
         
         # Mô phỏng quá trình tưới
         time.sleep(2)  # Mô phỏng thời gian thực tế

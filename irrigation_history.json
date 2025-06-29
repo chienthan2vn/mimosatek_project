@@ -13,7 +13,7 @@
     },
     "output_data": {
       "T_đầy_giây": 46,
-      "EC_đo_được": 4.8
+      "EC_đo_được": 4.2
     },
     "reflection_text": "Chu trình hiệu chỉnh ban đầu."
   },
@@ -34,5 +34,239 @@
       "EC_đo_được": 3.9
     },
     "reflection_text": "Chu trình tưới hoàn tất. EC đo được 3.9, gần đạt mục tiêu 4.0.  Thời gian chờ 90 phút có vẻ phù hợp, tuy nhiên cần theo dõi chặt chẽ trong chu trình tiếp theo để đảm bảo độ chính xác.  Có thể điều chỉnh thời gian chờ nhẹ nếu cần thiết để đạt EC mục tiêu.  Kiểm tra lại hệ thống tưới và cảm biến."
+  },
+  {
+    "id": 3,
+    "timestamp": "2025-06-18T22:57:54.801766",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 120,
+      "môi_trường_tb": {
+        "nhiệt_độ": 30.8,
+        "độ_ẩm": 65.1,
+        "et0": 0.29
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 57,
+      "EC_đo_được": 5.4
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC đo được 5.4, vượt quá mục tiêu 4.0.  Thời gian chờ 120 phút dường như không đủ để làm giảm độ mặn.  Kiểm tra hệ thống tưới và chất lượng nước.  Giảm thời gian tưới hoặc tăng thời gian chờ trong chu trình tiếp theo, ví dụ thử thời gian chờ 150 phút và giảm thời gian tưới xuống còn 45 giây. Giám sát chặt chẽ EC."
+  },
+  {
+    "id": 4,
+    "timestamp": "2025-06-18T22:58:56.545769",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 90,
+      "môi_trường_tb": {
+        "nhiệt_độ": 28.2,
+        "độ_ẩm": 66.5,
+        "et0": 0.3
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 59,
+      "EC_đo_được": 4.9
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC đo được 4.9, cao hơn mục tiêu 4.0.  Thời gian chờ 90 phút có vẻ quá dài, dẫn đến nồng độ EC tăng cao.  Kiểm tra hệ thống tưới và xem xét giảm thời gian chờ trong chu trình tiếp theo, ví dụ 75 phút, để đạt mục tiêu EC 4.0. Giám sát chặt chẽ EC sau khi điều chỉnh."
+  },
+  {
+    "id": 5,
+    "timestamp": "2025-06-18T22:59:09.249706",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 60,
+      "môi_trường_tb": {
+        "nhiệt_độ": 28.4,
+        "độ_ẩm": 72.6,
+        "et0": 0.23
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 32,
+      "EC_đo_được": 3.7
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC 3.7, thấp hơn mục tiêu 4.0.  Thời gian chờ 60 phút có vẻ hơi dài, cần xem xét rút ngắn thời gian chờ trong chu trình tiếp theo để tăng EC.  Kiểm tra lại hệ thống tưới và chất lượng nước. Thử nghiệm giảm thời gian chờ xuống còn 45 phút ở chu trình tiếp theo, theo dõi sát sao EC."
+  },
+  {
+    "id": 6,
+    "timestamp": "2025-06-18T23:29:49.306069",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 22,
+      "môi_trường_tb": {
+        "nhiệt_độ": 30.9,
+        "độ_ẩm": 65.1,
+        "et0": 0.25
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 31,
+      "EC_đo_được": 5.2
+    },
+    "reflection_text": "EC=5.2 so với mục tiêu 4.0. Thời gian chờ 22 phút cần được đánh giá lại. (Demo: 22s)"
+  },
+  {
+    "id": 7,
+    "timestamp": "2025-06-18T23:32:38.945412",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 15,
+      "môi_trường_tb": {
+        "nhiệt_độ": 34.5,
+        "độ_ẩm": 64.2,
+        "et0": 0.25
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 41,
+      "EC_đo_được": 3.6
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC đo được 3.6, thấp hơn mục tiêu 4.0.  Thời gian chờ 15 phút có vẻ phù hợp, tuy nhiên cần xem xét tăng thời gian tưới hoặc điều chỉnh tần suất tưới để đạt mục tiêu EC.  Đề nghị theo dõi sát sao EC trong chu trình tiếp theo và điều chỉnh nếu cần. (Demo: 15s)"
+  },
+  {
+    "id": 8,
+    "timestamp": "2025-06-18T23:35:55.214796",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 11,
+      "môi_trường_tb": {
+        "nhiệt_độ": 33.5,
+        "độ_ẩm": 66.5,
+        "et0": 0.28
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 41,
+      "EC_đo_được": 5.4
+    },
+    "reflection_text": "Chu trình tưới vừa kết thúc cho thấy EC đo được (5.4) cao hơn mục tiêu (4.0).  Thời gian chờ 11 phút có vẻ dài, cần xem xét rút ngắn thời gian chờ trong chu trình tiếp theo để giảm EC.  Kiểm tra hệ thống tưới và chất lượng nước.  Điều chỉnh thời gian chờ và thời gian tưới để đạt mục tiêu EC 4.0. (Demo: 11s)"
+  },
+  {
+    "id": 9,
+    "timestamp": "2025-06-18T23:51:50.661156",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 60,
+      "môi_trường_tb": {
+        "nhiệt_độ": 30.2,
+        "độ_ẩm": 77.9,
+        "et0": 0.29
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 34,
+      "EC_đo_được": 4.6
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC đo được 4.6, vượt mục tiêu 4.0.  Thời gian chờ 60 phút có vẻ quá dài, dẫn đến nồng độ EC cao hơn dự kiến.  Giảm thời gian chờ xuống còn 45-50 phút cho chu trình tiếp theo.  Theo dõi chặt chẽ EC và điều chỉnh thời gian chờ cho phù hợp để đạt mục tiêu 4.0."
+  },
+  {
+    "id": 10,
+    "timestamp": "2025-06-18T23:53:07.999650",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 60,
+      "môi_trường_tb": {
+        "nhiệt_độ": 28.9,
+        "độ_ẩm": 67.1,
+        "et0": 0.26
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 38,
+      "EC_đo_được": 5.1
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC 5.1, cao hơn mục tiêu 4.0.  Thời gian chờ 60 phút dường như không đủ để làm giảm độ mặn.  Cần xem xét giảm thời gian tưới hoặc tăng thời gian chờ trong chu trình tiếp theo.  Kiểm tra hệ thống tưới và chất lượng nước."
+  },
+  {
+    "id": 11,
+    "timestamp": "2025-06-19T07:38:47.868050",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 60,
+      "môi_trường_tb": {
+        "nhiệt_độ": 30.0,
+        "độ_ẩm": 73.4,
+        "et0": 0.2
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 55,
+      "EC_đo_được": 3.6
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC 3.6, thấp hơn mục tiêu 4.0. Thời gian chờ 60 phút có vẻ quá dài, dẫn đến EC thấp.  Đề nghị giảm thời gian chờ trong chu trình tiếp theo, ví dụ 45 phút, và theo dõi sát sao EC.  Cân nhắc tăng thời gian tưới nếu cần thiết để đạt mục tiêu EC 4.0."
+  },
+  {
+    "id": 12,
+    "timestamp": "2025-06-19T07:41:48.660320",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 90,
+      "môi_trường_tb": {
+        "nhiệt_độ": 34.5,
+        "độ_ẩm": 61.3,
+        "et0": 0.28
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 43,
+      "EC_đo_được": 3.9
+    },
+    "reflection_text": "Chu trình tưới hoàn tất. EC đo được 3.9, gần đạt mục tiêu 4.0.  Thời gian chờ 90 phút có vẻ hơi dài, cần xem xét rút ngắn trong chu trình tiếp theo để tránh lãng phí nước và thời gian.  Theo dõi chặt chẽ EC trong các chu trình sau. Điều chỉnh thời gian chờ và tưới dựa trên dữ liệu thực tế."
+  },
+  {
+    "id": 13,
+    "timestamp": "2025-06-19T07:41:49.450650",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 90,
+      "môi_trường_tb": {
+        "nhiệt_độ": 29.9,
+        "độ_ẩm": 60.8,
+        "et0": 0.21
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 41,
+      "EC_đo_được": 4.1
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC đo được 5.2, cao hơn mục tiêu 4.0.  Thời gian chờ 90 phút có vẻ dài, cần xem xét giảm thời gian chờ trong chu trình tiếp theo để giảm EC.  Thời gian tưới 41 giây cần được giữ nguyên hoặc điều chỉnh nhẹ tùy thuộc vào điều kiện thời tiết.  Kiểm tra lại hệ thống tưới và cảm biến EC."
+  },
+  {
+    "id": 14,
+    "timestamp": "2025-06-19T09:43:07.794363",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 60,
+      "môi_trường_tb": {
+        "nhiệt_độ": 35.0,
+        "độ_ẩm": 79.2,
+        "et0": 0.26
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 57,
+      "EC_đo_được": 4.2
+    },
+    "reflection_text": "Chu trình tưới kết thúc với EC đo được 4.7, cao hơn mục tiêu 4.0.  Thời gian chờ 60 phút có vẻ dài, dẫn đến lượng nước tưới quá nhiều.  Đề nghị giảm thời gian chờ trong chu trình tiếp theo, ví dụ 45 phút, đồng thời theo dõi chặt chẽ EC để điều chỉnh chính xác hơn.  Cần xem xét thêm các yếu tố ảnh hưởng khác như độ ẩm đất và điều kiện thời tiết."
+  },
+  {
+    "id": 15,
+    "timestamp": "2025-06-19T09:44:05.182785",
+    "phase": "operation",
+    "input_data": {
+      "T_chờ_phút": 60,
+      "môi_trường_tb": {
+        "nhiệt_độ": 32.5,
+        "độ_ẩm": 68.7,
+        "et0": 0.3
+      }
+    },
+    "output_data": {
+      "T_đầy_giây": 38,
+      "EC_đo_được": 4.3
+    },
+    "reflection_text": "EC đo được (4.3) cao hơn mục tiêu (4.0).  Thời gian chờ 60 phút có vẻ dài, cần xem xét giảm thời gian chờ trong chu trình tiếp theo để điều chỉnh EC xuống mức mục tiêu.  Đề nghị giảm thời gian chờ xuống khoảng 45 phút và theo dõi chặt chẽ EC."
   }
 ]

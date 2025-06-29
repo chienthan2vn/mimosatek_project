@@ -1,0 +1,138 @@
+# Default values for mimosatek
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Application configuration
+app:
+  name: mimosatek
+  version: "1.0.0"
+  
+# Image configuration
+image:
+  repository: mimosatek/irrigation-system
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# Replica configuration
+replicaCount: 2
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 7860
+  targetPort: 7860
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: mimosatek.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: mimosatek-tls
+      hosts:
+        - mimosatek.example.com
+
+# Resources
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector, tolerations and affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Security context
+securityContext: {}
+podSecurityContext: {}
+
+# Environment variables
+env:
+  - name: OPENAI_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: mimosatek-secrets
+        key: openai-api-key
+  - name: OPENAI_BASE_URL
+    value: "https://generativelanguage.googleapis.com/v1beta/openai/"
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: mimosatek-secrets
+        key: database-url
+
+# Database configuration
+database:
+  enabled: true
+  type: postgresql
+  host: ""
+  port: 5432
+  name: mimosatek_db
+  username: mimosatek_user
+  password: ""
+  
+# Redis configuration (for caching)
+redis:
+  enabled: true
+  host: ""
+  port: 6379
+  password: ""
+
+# Persistent Volume Claims
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  mountPath: /app/data
+
+# ConfigMap data
+configMap:
+  data:
+    app.conf: |
+      [app]
+      debug = false
+      port = 7860
+      
+      [logging]
+      level = info
+      
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    labels:
+      app: mimosatek
+  
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention: "7d"
