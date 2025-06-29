@@ -1,0 +1,14 @@
+# Bỏ qua tất cả file .log
+*.log1
+
+# Bỏ qua thư mục build/
+build/
+
+# Bỏ qua file cụ thể
+secret.txt
+
+# Bỏ qua tất cả file tạm thời của macOS
+.DS_Store
+
+# Bỏ qua thư mục cache của Python
+__pycache__/

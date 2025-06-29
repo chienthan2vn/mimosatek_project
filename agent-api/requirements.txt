@@ -1,0 +1,15 @@
+# Existing dependencies
+openai
+agno
+python-dotenv
+gradio
+pandas
+plotly
+matplotlib
+pycountry
+googlesearch-python
+openmeteo-requests
+requests-cache
+retry-requests
+numpy
+pandas
