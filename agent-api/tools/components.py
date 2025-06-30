@@ -10,6 +10,10 @@ import random
 import psycopg2
 from loguru import logger
 from tools.utils import TimeConverter
+import openmeteo_requests
+import requests_cache
+from retry_requests import retry
+import pandas as pd
 
 class api_for_all:
     def __init__(self):
@@ -200,51 +204,94 @@ class api_for_all:
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to parse response: {e}")
     
-    def get_weather_forecast(self) -> Any:
+    def get_weather_forecast(self) -> Dict[str, Any]:
         """
-        Get the weather forecast for a specific crop.
+        Get weather data from Open-Meteo API and return as JSON
+            
+        Returns:
+            dict: Weather data in JSON format
         """
-        # Dữ liệu thời tiết giả cho 7 ngày
-        base_temp = random.randint(20, 30)
-        
-        forecast_data = {
-            "location": "Đồng bằng sông Cửu Long",
-            "forecast_period": "7 days",
-            "current_conditions": {
-                "temperature": base_temp + random.randint(-3, 3),
-                "humidity": random.randint(60, 85),
-                "wind_speed": round(random.uniform(5.0, 15.0), 1),
-                "pressure": random.randint(1010, 1025),
-                "uv_index": random.randint(6, 11),
-                "soil_moisture": random.randint(40, 70)
-            },
-            "daily_forecast": [],
-        }
-        
-        # Tạo dự báo 7 ngày
-        for i in range(7):
-            day_data = {
-                "date": (datetime.now().timestamp() + (i * 24 * 60 * 60)) * 1000,
-                "day_name": ["Hôm nay", "Ngày mai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Chủ nhật"][i],
-                "temperature": {
-                    "min": base_temp + random.randint(-5, 0),
-                    "max": base_temp + random.randint(0, 8),
-                    "avg": base_temp + random.randint(-2, 4)
-                },
-                "humidity": random.randint(55, 90),
-                "precipitation": {
-                    "probability": random.randint(0, 80),
-                    "amount": round(random.uniform(0, 25.0), 1)
-                },
-                "wind": {
-                    "speed": round(random.uniform(3.0, 18.0), 1),
-                    "direction": random.choice(["N", "NE", "E", "SE", "S", "SW", "W", "NW"])
-                },
-                "conditions": random.choice([
-                    "sunny", "partly_cloudy", "cloudy", "light_rain", 
-                    "moderate_rain", "thunderstorm", "overcast"
-                ]),
+        try:
+            latitude=11.74
+            longitude=108.37
+            # Setup the Open-Meteo API client with cache and retry on error
+            cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
+            retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+            openmeteo = openmeteo_requests.Client(session=retry_session)
+
+            # Make sure all required weather variables are listed here
+            url = "https://api.open-meteo.com/v1/forecast"
+            start_date = datetime.now().strftime('%Y-%m-%d')
+            end_date = (datetime.now() + pd.DateOffset(days=1)).strftime('%Y-%m-%d')
+            
+            params = {
+                "latitude": latitude,
+                "longitude": longitude,
+                "hourly": ["temperature_2m", "relative_humidity_2m", "precipitation_probability", 
+                        "apparent_temperature", "et0_fao_evapotranspiration", "rain", "visibility"],
+                "models": "best_match",
+                "timezone": "Asia/Bangkok",
+                "start_date": start_date,
+                "end_date": end_date
             }
-            forecast_data["daily_forecast"].append(day_data)
-        
-        return forecast_data
+            responses = openmeteo.weather_api(url, params=params)
+
+            # Process first location
+            response = responses[0]
+            
+            # Process hourly data
+            hourly = response.Hourly()
+            hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
+            hourly_relative_humidity_2m = hourly.Variables(1).ValuesAsNumpy()
+            hourly_precipitation_probability = hourly.Variables(2).ValuesAsNumpy()
+            hourly_apparent_temperature = hourly.Variables(3).ValuesAsNumpy()
+            hourly_et0_fao_evapotranspiration = hourly.Variables(4).ValuesAsNumpy()
+            hourly_rain = hourly.Variables(5).ValuesAsNumpy()
+            hourly_visibility = hourly.Variables(6).ValuesAsNumpy()
+
+            # Create date range
+            date_range = pd.date_range(
+                start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
+                end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
+                freq=pd.Timedelta(seconds=hourly.Interval()),
+                inclusive="left"
+            )
+
+            # Build response data
+            weather_data = {
+                "location": {
+                    "latitude": float(response.Latitude()),
+                    "longitude": float(response.Longitude()),
+                    "elevation": float(response.Elevation()),
+                    "timezone": str(response.Timezone())
+                },
+                "forecast": []
+            }
+
+            # Convert numpy arrays to lists and combine with dates
+            for i, date in enumerate(date_range):
+                if i < len(hourly_temperature_2m):
+                    def safe_float_convert(value):
+                        """Safely convert numpy value to float or return None"""
+                        try:
+                            if pd.isna(value) or value is None:
+                                return None
+                            return float(value)
+                        except (ValueError, TypeError):
+                            return None
+                    
+                    weather_data["forecast"].append({
+                        "datetime": date.isoformat(),
+                        "temperature_2m": safe_float_convert(hourly_temperature_2m[i]),
+                        "relative_humidity_2m": safe_float_convert(hourly_relative_humidity_2m[i]),
+                        "precipitation_probability": safe_float_convert(hourly_precipitation_probability[i]),
+                        "apparent_temperature": safe_float_convert(hourly_apparent_temperature[i]),
+                        "et0_fao_evapotranspiration": safe_float_convert(hourly_et0_fao_evapotranspiration[i]),
+                        "rain": safe_float_convert(hourly_rain[i]),
+                        "visibility": safe_float_convert(hourly_visibility[i])
+                    })
+
+            return weather_data
+
+        except Exception as e:
+            return {"error": str(e), "status": "failed"}
