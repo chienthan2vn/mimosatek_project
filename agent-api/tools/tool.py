@@ -21,6 +21,7 @@ class AgricultureToolkit(Toolkit):
         self.register(self.get_irrigation_events)
         self.register(self.get_weather_forecast)
         self.register(self.create_irrigation_event)
+        self.register(self.create_continuous_irrigation_schedule)
 
     def get_program_schedule(self, before_days: int = 1, after_days: int = 1) -> str:
         """
@@ -90,6 +91,36 @@ class AgricultureToolkit(Toolkit):
         except Exception as e:
             logger.error(f"Error creating irrigation event: {e}")
             return f"Error creating irrigation event: {str(e)}"
+
+    def create_continuous_irrigation_schedule(self, dtstart: int, n: int = 1, quantity: Optional[List[int]] = None,
+                                              ec_setpoint: float = 1.9) -> str:
+        """
+        Create a continuous irrigation schedule by generating multiple irrigation events.
+
+        Args:
+            dtstart (int): Start time of the first event (timestamp in ms).
+            n (int, optional): Number of events to create (default: 1).
+            quantity (Optional[List[int]], optional): List of irrigation duration values [seconds, minutes, hours]. Only the first index (seconds) is actively used for irrigation duration. Format: [seconds, minutes, hours] (default: [200, 0, 0] = 200 seconds).
+            ec_setpoint (float, optional): Electrical conductivity setpoint value (default: 1.9).
+
+        Returns:
+            str: Result message.
+        """
+        try:
+            if quantity is None or not isinstance(quantity, list):
+                quantity = [200, 0, 0]  # Giá trị mặc định
+
+            logger.info("Creating continuous irrigation schedule")
+            results = self.api_client.create_continuous_irrigation_schedule(
+                dtstart=dtstart,
+                n=n,
+                quantity=quantity,
+                ec_setpoint=ec_setpoint,
+            )
+            return str(results) if results else "Failed to create continuous irrigation schedule"
+        except Exception as e:
+            logger.error(f"Error creating continuous irrigation schedule: {e}")
+            return f"Error creating continuous irrigation schedule: {str(e)}"
 
     def get_weather_forecast(self) -> str:
             """

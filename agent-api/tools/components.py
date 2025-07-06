@@ -202,12 +202,7 @@ class api_for_all:
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to parse response: {e}")
     
-    def create_irrigation_event(
-        self,
-        dtstart: int,
-        quantity: list = None,
-        ec_setpoint: float = 1.9,
-    ) -> dict:
+    def create_irrigation_event(self, dtstart: int, quantity: list = None, ec_setpoint: float = 1.9) -> dict:
         """
         Create irrigation event using Mimosatek API.
         
@@ -389,3 +384,56 @@ class api_for_all:
 
         except Exception as e:
             return {"error": str(e), "status": "failed"}
+    
+    def create_continuous_irrigation_schedule(self, dtstart: int, n: int = 1, quantity: list = None, ec_setpoint: float = 1.9) -> list:
+        """
+        Create multiple irrigation events for continuous irrigation schedule.
+        
+        Args:
+            dtstart: Start timestamp in milliseconds for the first irrigation event
+            n: Number of irrigation events to create (default: 1)
+            quantity: List of irrigation duration values [seconds, minutes, hours]. Only the first index (seconds) is actively used for irrigation duration. Format: [seconds, minutes, hours] (default: [200, 0, 0] = 200 seconds)
+            ec_setpoint: Electrical conductivity setpoint value (default: 1.9)
+            
+        Returns:
+            list: List of created irrigation events with their IDs and durations
+        """
+        results = []
+        interval_minutes = 60
+        interval_ms = interval_minutes * 60 * 1000  # Convert minutes to milliseconds
+        
+        for i in range(n):
+            # Calculate the dtstart for this iteration
+            current_dtstart = dtstart + (i * interval_ms)
+            
+            try:
+                # Create irrigation event using the existing method
+                event_result = self.create_irrigation_event(
+                    dtstart=current_dtstart,
+                    quantity=quantity,
+                    ec_setpoint=ec_setpoint
+                )
+                
+                # Add additional info about the iteration
+                event_result['iteration'] = i + 1
+                event_result['dtstart'] = current_dtstart
+                event_result['scheduled_time'] = datetime.fromtimestamp(current_dtstart / 1000).isoformat()
+                
+                results.append(event_result)
+                
+                # Log successful creation
+                logger.info(f"Created irrigation event {i+1}/{n} at {event_result['scheduled_time']}")
+                
+            except Exception as e:
+                # Log error and continue with next iteration
+                error_result = {
+                    'iteration': i + 1,
+                    'dtstart': current_dtstart,
+                    'scheduled_time': datetime.fromtimestamp(current_dtstart / 1000).isoformat(),
+                    'error': str(e),
+                    'status': 'failed'
+                }
+                results.append(error_result)
+                logger.error(f"Failed to create irrigation event {i+1}/{n}: {e}")
+        
+        return results

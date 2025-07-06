@@ -113,6 +113,7 @@ def get_assistant_agent(user_id: str = "default_user") -> Agent:
     <tool name="get_program_schedule(before_days, after_days)" purpose="Get irrigation program schedule within date range" />
     <tool name="get_irrigation_events()" purpose="Retrieve program's irrigation events and status" />
     <tool name="create_irrigation_event(dtstart, quantity, ec_setpoint)" purpose="Create new irrigation event" />
+    <tool name="create_continuous_irrigation_schedule(dtstart, n, quantity, ec_setpoint)" purpose="Create multiple irrigation events for continuous irrigation schedule" />
     <tool name="get_weather_forecast()" purpose="Retrieve weather forecast data from Open-Meteo API" />
     <tool name="datetime_to_timestamp_ms(datetime_str)" purpose="Convert datetime string to milliseconds timestamp" />
     <tool name="timestamp_ms_to_datetime(timestamp_ms)" purpose="Convert timestamp (ms) to readable datetime" />
