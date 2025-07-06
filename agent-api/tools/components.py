@@ -14,10 +14,12 @@ import openmeteo_requests
 import requests_cache
 from retry_requests import retry
 import pandas as pd
+from datetime import datetime, timezone
 
 class api_for_all:
     def __init__(self):
         self.token = self.get_token()
+        self.time_converter = TimeConverter()
 
     def get_token(self) -> str:
         """
@@ -61,16 +63,15 @@ class api_for_all:
             raise Exception(f"Request failed: {e}")
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to extract token from response: {e}")
-    
-    def get_program_schedule(self, program_id: str = "4c17ad40-54d6-11f0-83a2-b5dfc26d8446") -> dict:
+
+    def get_program_schedule(self, program_id: str = "4c17ad40-54d6-11f0-83a2-b5dfc26d8446", before_days: int = -1, after_days: int = 1) -> Any:
         """
-        Get program schedule from Mimosatek API.
+        Get a list of the program's current watering schedules from Mimosatek API.
         
-        Args:
-            token: Authentication token
+        Args:     
             program_id: ID of the program
-            start: Start timestamp in milliseconds
-            end: End timestamp in milliseconds
+            before_days: Number of days before the current date to include in the schedule
+            after_days: Number of days after the current date to include in the schedule
             
         Returns:
             dict: Program schedule data
@@ -102,8 +103,8 @@ class api_for_all:
                 }
             }
         """
-        start = TimeConverter.datetime_to_timestamp_ms(TimeConverter.get_one_month_before())
-        end = TimeConverter.datetime_to_timestamp_ms(TimeConverter.get_one_month_after())
+        start = self.time_converter.datetime_to_timestamp_ms(self.time_converter.get_other_days(days=before_days))
+        end = self.time_converter.datetime_to_timestamp_ms(self.time_converter.get_other_days(days=after_days))
         payload = {
             "query": query,
             "variables": {
@@ -128,7 +129,8 @@ class api_for_all:
             response_data = response.json()
             
             if "data" in response_data and "program_schedule" in response_data["data"]:
-                return response_data["data"]["program_schedule"][-1]
+                # print(response_data["data"]["program_schedule"])
+                return response_data["data"]["program_schedule"]
             else:
                 raise ValueError("Invalid response format")
                 
@@ -142,7 +144,6 @@ class api_for_all:
         Get list program's irrigation events and status from Mimosatek API.
 
         Args:
-            token: Authentication token (if None, will get new token)
             program_id: ID of the irrigation program
             
         Returns:
@@ -195,7 +196,8 @@ class api_for_all:
             response_data = response.json()
         
             if "data" in response_data and "irrigation_events" in response_data["data"]:
-                return response_data["data"]["irrigation_events"][-1]
+                # print(response_data["data"]["irrigation_events"])
+                return response_data["data"]["irrigation_events"]
             else:
                 raise ValueError("Invalid response format")
                 
@@ -204,6 +206,118 @@ class api_for_all:
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to parse response: {e}")
     
+    def create_irrigation_event(
+        self,
+        program_id: str,
+        area_id: str,
+        event_name: str,
+        dtstart: int,
+        irrigation_method: int = 0,
+        quantity: list = None,
+        strict_time: bool = False,
+        nutrients_mixing_program: dict = None,
+        recurrence: str = None,
+        stored_as_template: bool = False,
+        template_name: str = ""
+    ) -> dict:
+        """
+        Create irrigation event using Mimosatek API.
+        
+        Args:
+            program_id: ID of the program (default: "4c17ad40-54d6-11f0-83a2-b5dfc26d8446")
+            area_id: ID of the area (default: "16106380-f811-11ef-8831-112b9cc8d9f8")
+            event_name: Name of the irrigation event (default: "KV2")
+            dtstart: Start timestamp in milliseconds
+            irrigation_method: Irrigation method (default: 0)
+            quantity: List of quantities (default: [200, 0, 0])
+            strict_time: Whether to use strict time (default: False)
+            nutrients_mixing_program: Nutrients mixing program configuration
+            recurrence: Recurrence pattern (e.g., "INTERVAL=1;FREQ=DAILY;UNTIL=20260621T165959Z")
+            stored_as_template: Whether to store as template (default: False)
+            template_name: Template name if stored as template (default: "")
+            
+        Returns:
+            dict: Response data containing event id and duration
+        """
+        url = "https://demo.mimosatek.com/api/monitor"
+        
+        # GraphQL mutation for creating irrigation event
+        query = """
+            mutation create_irrigation_event(
+                $program_id: ID!
+                $event: InputIrrigationEvent!
+                $stored_as_template: Boolean
+                $template_name: String
+            ) {
+                create_irrigation_event(
+                    program_id: $program_id
+                    event: $event
+                    stored_as_template: $stored_as_template
+                    template_name: $template_name
+                ) {
+                    id
+                    duration
+                }
+            }
+        """
+        
+        # Set default values
+        if quantity is None:
+            quantity = [200, 0, 0]
+        
+        # Build event object
+        event = {
+            "area_id": area_id,
+            "name": event_name,
+            "strict_time": strict_time,
+            "dtstart": dtstart,
+            "irrigation_method": irrigation_method,
+            "quantity": quantity
+        }
+        
+        # Add nutrients mixing program if provided
+        if nutrients_mixing_program:
+            event["nutrients_mixing_program"] = nutrients_mixing_program
+        
+        # Add recurrence if provided
+        if recurrence:
+            event["recurrence"] = recurrence
+        
+        # Build payload
+        payload = {
+            "query": query,
+            "variables": {
+                "program_id": program_id,
+                "event": event,
+                "stored_as_template": stored_as_template,
+                "template_name": template_name
+            }
+        }
+        
+        headers = {
+            'accept': '*/*',
+            'accept-encoding': 'gzip, deflate, br',
+            'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
+            'authorization': self.token,
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            
+            response_data = response.json()
+            
+            if "data" in response_data and "create_irrigation_event" in response_data["data"]:
+                return response_data["data"]["create_irrigation_event"]
+            else:
+                raise ValueError("Invalid response format")
+                
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Request failed: {e}")
+        except (KeyError, ValueError) as e:
+            raise Exception(f"Failed to parse response: {e}")
+
     def get_weather_forecast(self) -> Dict[str, Any]:
         """
         Get weather data from Open-Meteo API and return as JSON
