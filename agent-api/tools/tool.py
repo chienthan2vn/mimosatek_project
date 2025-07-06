@@ -22,13 +22,11 @@ class AgricultureToolkit(Toolkit):
         self.register(self.get_weather_forecast)
         self.register(self.create_irrigation_event)
 
-    def get_program_schedule(self, program_id: Optional[str] = "4c17ad40-54d6-11f0-83a2-b5dfc26d8446", before_days: int = 1, after_days: int = 1) -> str:
+    def get_program_schedule(self, before_days: int = 1, after_days: int = 1) -> str:
         """
         Get program schedule from Mimosatek API showing irrigation timing and activities.
         
         Args:
-            program_id (Optional[str]): ID of the irrigation program. 
-                                      Defaults to "4c17ad40-54d6-11f0-83a2-b5dfc26d8446"
             before_days (int): Number of days before the current date to include in the schedule
             after_days (int): Number of days after the current date to include in the schedule
 
@@ -36,12 +34,9 @@ class AgricultureToolkit(Toolkit):
             str: Program schedule data with timing, duration, and area information
         """
         try:
-            logger.info(f"Getting program schedule for: {program_id or 'default'}")
+            logger.info("Getting program schedule")
             
-            if program_id:
-                result = self.api_client.get_program_schedule(program_id=program_id)
-            else:
-                result = self.api_client.get_program_schedule()
+            result = self.api_client.get_program_schedule(before_days=before_days, after_days=after_days)
             
             return str(result) if result else "No schedule data available"
             
@@ -49,66 +44,33 @@ class AgricultureToolkit(Toolkit):
             logger.error(f"Error getting program schedule: {e}")
             return f"Error retrieving program schedule: {str(e)}"
     
-    def get_irrigation_events(self, program_id: Optional[str] = None) -> str:
+    def get_irrigation_events(self) -> str:
         """
         Get list of irrigation events and their configuration from Mimosatek API.
-        
-        Args:
-            program_id (Optional[str]): ID of the irrigation program.
-                                      Defaults to "4c17ad40-54d6-11f0-83a2-b5dfc26d8446"
         
         Returns:
             str: Irrigation events data with nutrients, timing, and configuration details
         """
         try:
-            logger.info(f"Getting irrigation events for: {program_id or 'default'}")
+            logger.info("Getting irrigation events")
             
-            if program_id:
-                result = self.api_client.get_irrigation_events(program_id)
-            else:
-                result = self.api_client.get_irrigation_events()
+            result = self.api_client.get_irrigation_events()
             
             return str(result) if result else "No irrigation events available"
             
         except Exception as e:
             logger.error(f"Error getting irrigation events: {e}")
             return f"Error retrieving irrigation events: {str(e)}"
-    
-    def get_weather_forecast(self) -> str:
-        """
-        Get weather forecast for a specific crop with irrigation recommendations.
-            
-        Returns:
-            str: Weather forecast information for the specified crop
-        """
-        try:
-            logger.info(f"Getting weather forecast")
-            result = self.api_client.get_weather_forecast()
-            return str(result) if result else f"No weather forecast"
-        except Exception as e:
-            logger.error(f"Error getting weather forecast: {e}")
-            return f"Error retrieving weather forecast: {str(e)}"
-    
-    def create_irrigation_event(self, program_id: str, area_id: str, event_name: str, 
-                                dtstart: int, irrigation_method: int = 0, quantity: Optional[List[int]] = None, 
-                                strict_time: bool = False, nutrients_mixing_program: dict = None, 
-                                recurrence: str = None, stored_as_template: bool = False, 
-                                template_name: str = "") -> str:
+
+    def create_irrigation_event(self, dtstart: int, quantity: Optional[List[int]] = None,
+                                ec_setpoint: float = 1.9) -> str:
         """
         Create a new irrigation event in the Mimosatek API.
 
         Args:
-            program_id (str): ID of the irrigation program (default: "4c17ad40-54d6-11f0-83a2-b5dfc26d8446")
-            area_id (str): ID of the area (default: "16106380-f811-11ef-8831-112b9cc8d9f8")
-            event_name (str): Name of the irrigation event (default: "KV2")
             dtstart (int): Start time of the event (timestamp in ms).
-            irrigation_method (int, optional): Irrigation method (default: 0).
-            quantity (Optional[List[int]], optional): List of quantities (default: [200, 0, 0]).
-            strict_time (bool, optional): Whether to use strict timing (default: False).
-            nutrients_mixing_program (dict, optional): Nutrients mixing program details (default: None).
-            recurrence (str, optional): Recurrence rule (default: None).
-            stored_as_template (bool, optional): Whether to store as template (default: False).
-            template_name (str, optional): Name of the template (default: "").
+            quantity (Optional[List[int]], optional): List of irrigation duration values [seconds, minutes, hours]. Only the first index (seconds) is actively used for irrigation duration. Format: [seconds, minutes, hours] (default: [200, 0, 0] = 200 seconds).
+            ec_setpoint (float, optional): Electrical conductivity setpoint value (default: 1.9).
 
         Returns:
             str: Result message.
@@ -118,25 +80,32 @@ class AgricultureToolkit(Toolkit):
             if quantity is None or not isinstance(quantity, list):
                 quantity = [200, 0, 0]  # Giá trị mặc định
 
-            logger.info(f"Creating irrigation event: {event_name}")
+            logger.info("Creating irrigation event")
             result = self.api_client.create_irrigation_event(
-                program_id=program_id,
-                area_id=area_id,
-                event_name=event_name,
                 dtstart=dtstart,
-                irrigation_method=irrigation_method,
                 quantity=quantity,
-                strict_time=strict_time,
-                nutrients_mixing_program=nutrients_mixing_program,
-                recurrence=recurrence,
-                stored_as_template=stored_as_template,
-                template_name=template_name
+                ec_setpoint=ec_setpoint,
             )
             return str(result) if result else "Failed to create irrigation event"
         except Exception as e:
             logger.error(f"Error creating irrigation event: {e}")
             return f"Error creating irrigation event: {str(e)}"
 
+    def get_weather_forecast(self) -> str:
+            """
+            Get weather forecast for a specific crop with irrigation recommendations.
+                
+            Returns:
+                str: Weather forecast information for the specified crop
+            """
+            try:
+                logger.info(f"Getting weather forecast")
+                result = self.api_client.get_weather_forecast()
+                return str(result) if result else f"No weather forecast"
+            except Exception as e:
+                logger.error(f"Error getting weather forecast: {e}")
+                return f"Error retrieving weather forecast: {str(e)}"
+            
     # Convenience methods that combine multiple data sources
     def get_irrigation_status(self) -> str:
         """
@@ -227,10 +196,10 @@ class TimeToolkit(Toolkit):
     
     def get_now_datetime(self) -> str:
         """
-        Get the current system time as a datetime string in 'YYYY-MM-DD HH:MM:SS' format.
+        Get the current time as a datetime string in 'YYYY-MM-DD HH:MM:SS' format.
         
         Returns:
-            str: Current system time as a datetime string.
+            str: Current time as a datetime string.
         """
         try:
             now = self.converter.get_now_datetime()

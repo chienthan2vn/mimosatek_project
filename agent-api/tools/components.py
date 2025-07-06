@@ -64,12 +64,11 @@ class api_for_all:
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to extract token from response: {e}")
 
-    def get_program_schedule(self, program_id: str = "4c17ad40-54d6-11f0-83a2-b5dfc26d8446", before_days: int = -1, after_days: int = 1) -> Any:
+    def get_program_schedule(self, before_days: int = -1, after_days: int = 1) -> Any:
         """
         Get a list of the program's current watering schedules from Mimosatek API.
         
         Args:     
-            program_id: ID of the program
             before_days: Number of days before the current date to include in the schedule
             after_days: Number of days after the current date to include in the schedule
             
@@ -108,7 +107,7 @@ class api_for_all:
         payload = {
             "query": query,
             "variables": {
-                "program_id": program_id,
+                "program_id": "4c17ad40-54d6-11f0-83a2-b5dfc26d8446",
                 "start": float(start),
                 "end": float(end)
             }
@@ -139,12 +138,9 @@ class api_for_all:
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to parse response: {e}")
           
-    def get_irrigation_events(self, program_id: str = "4c17ad40-54d6-11f0-83a2-b5dfc26d8446") -> Any:
+    def get_irrigation_events(self) -> Any:
         """
         Get list program's irrigation events and status from Mimosatek API.
-
-        Args:
-            program_id: ID of the irrigation program
             
         Returns:
             Dict containing irrigation events data
@@ -177,7 +173,7 @@ class api_for_all:
         payload = {
             "query": query,
             "variables": {
-                "program_id": program_id
+                "program_id": "4c17ad40-54d6-11f0-83a2-b5dfc26d8446"
             }
         }
         
@@ -208,33 +204,17 @@ class api_for_all:
     
     def create_irrigation_event(
         self,
-        program_id: str,
-        area_id: str,
-        event_name: str,
         dtstart: int,
-        irrigation_method: int = 0,
         quantity: list = None,
-        strict_time: bool = False,
-        nutrients_mixing_program: dict = None,
-        recurrence: str = None,
-        stored_as_template: bool = False,
-        template_name: str = ""
+        ec_setpoint: float = 1.9,
     ) -> dict:
         """
         Create irrigation event using Mimosatek API.
         
         Args:
-            program_id: ID of the program (default: "4c17ad40-54d6-11f0-83a2-b5dfc26d8446")
-            area_id: ID of the area (default: "16106380-f811-11ef-8831-112b9cc8d9f8")
-            event_name: Name of the irrigation event (default: "KV2")
             dtstart: Start timestamp in milliseconds
-            irrigation_method: Irrigation method (default: 0)
-            quantity: List of quantities (default: [200, 0, 0])
-            strict_time: Whether to use strict time (default: False)
-            nutrients_mixing_program: Nutrients mixing program configuration
-            recurrence: Recurrence pattern (e.g., "INTERVAL=1;FREQ=DAILY;UNTIL=20260621T165959Z")
-            stored_as_template: Whether to store as template (default: False)
-            template_name: Template name if stored as template (default: "")
+            quantity: List of irrigation duration values [seconds, minutes, hours]. Only the first index (seconds) is actively used for irrigation duration. Format: [seconds, minutes, hours] (default: [200, 0, 0] = 200 seconds)
+            ec_setpoint: Electrical conductivity setpoint value (default: 1.9)
             
         Returns:
             dict: Response data containing event id and duration
@@ -265,32 +245,32 @@ class api_for_all:
         if quantity is None:
             quantity = [200, 0, 0]
         
-        # Build event object
+        # Build event object with direct values
         event = {
-            "area_id": area_id,
-            "name": event_name,
-            "strict_time": strict_time,
+            "area_id": "16106380-f811-11ef-8831-112b9cc8d9f8",
+            "name": "KV2",
+            "strict_time": False,
             "dtstart": dtstart,
-            "irrigation_method": irrigation_method,
-            "quantity": quantity
+            "irrigation_method": 0,
+            "quantity": quantity,
+            "nutrients_mixing_program": {
+                "name": "sos",
+                "mixing_type": 1,
+                "ph_setpoint": 5.1,
+                "ec_setpoint": ec_setpoint,
+                "rates": [3, 5, 0, 0, 5]
+            },
+            "recurrence": "INTERVAL=1;FREQ=DAILY;UNTIL=20260621T165959Z"
         }
         
-        # Add nutrients mixing program if provided
-        if nutrients_mixing_program:
-            event["nutrients_mixing_program"] = nutrients_mixing_program
-        
-        # Add recurrence if provided
-        if recurrence:
-            event["recurrence"] = recurrence
-        
-        # Build payload
+        # Build payload with direct values
         payload = {
             "query": query,
             "variables": {
-                "program_id": program_id,
+                "program_id": "4c17ad40-54d6-11f0-83a2-b5dfc26d8446",
                 "event": event,
-                "stored_as_template": stored_as_template,
-                "template_name": template_name
+                "stored_as_template": False,
+                "template_name": ""
             }
         }
         
