@@ -64,11 +64,30 @@ class api_for_all:
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to extract token from response: {e}")
 
-    def get_program_schedule(self, before_days: int = -1, after_days: int = 1) -> Any:
+    def get_controller_id_by_farm(self) -> Dict[str, Any]:
+        """
+        Get the controller ID.
+
+        Returns:
+            str: The controller ID.
+        """
+        farm_id = "3a63be60-6fc1-11ed-9cbe-f9420b7f5b37"
+        #TODO: Implement the logic to retrieve the controller ID based on farm and area IDs.s
+        try:
+            return {
+                "farm_id": farm_id,
+                "controller_id": "4034b240-6fc1-11ed-9cbe-f9420b7f5b37"  # Replace with actual logic to get controller ID
+            }
+        except Exception as e:
+            logger.error(f"Error getting controller ID for farm {farm_id}: {e}")
+            raise Exception(f"Failed to get controller ID: {e}")
+
+    def get_program_schedule(self, program_id: str, before_days: int = -1, after_days: int = 1) -> Any:
         """
         Get a list of the program's current watering schedules from Mimosatek API.
         
-        Args:     
+        Args:
+            program_id: The ID of the irrigation program
             before_days: Number of days before the current date to include in the schedule
             after_days: Number of days after the current date to include in the schedule
             
@@ -107,7 +126,7 @@ class api_for_all:
         payload = {
             "query": query,
             "variables": {
-                "program_id": "4c17ad40-54d6-11f0-83a2-b5dfc26d8446",
+                "program_id": program_id,
                 "start": float(start),
                 "end": float(end)
             }
@@ -137,11 +156,14 @@ class api_for_all:
             raise Exception(f"Request failed: {e}")
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to parse response: {e}")
-          
-    def get_irrigation_events(self) -> Any:
+
+    def get_irrigation_events(self, program_id: str) -> Any:
         """
         Get list program's irrigation events and status from Mimosatek API.
-            
+
+        Args:
+            program_id: The ID of the irrigation program
+
         Returns:
             Dict containing irrigation events data
         """
@@ -173,7 +195,7 @@ class api_for_all:
         payload = {
             "query": query,
             "variables": {
-                "program_id": "4c17ad40-54d6-11f0-83a2-b5dfc26d8446"
+                "program_id": program_id
             }
         }
         
@@ -201,18 +223,22 @@ class api_for_all:
             raise Exception(f"Request failed: {e}")
         except (KeyError, ValueError) as e:
             raise Exception(f"Failed to parse response: {e}")
-    
-    def create_irrigation_event(self, dtstart: int, quantity: list = None, ec_setpoint: float = 1.9) -> dict:
+
+    def create_irrigation_event(self, program_id: str, dtstart: int, interval_minutes: int = 60, n: int = 1, quantity_second: int = 200, ec_setpoint: float = 1.9, ph_setpoint: float = 5.1) -> Any:
         """
-        Create irrigation event using Mimosatek API.
+        Create irrigation event(s) using Mimosatek API.
         
         Args:
-            dtstart: Start timestamp in milliseconds
-            quantity: List of irrigation duration values [seconds, minutes, hours]. Only the first index (seconds) is actively used for irrigation duration. Format: [seconds, minutes, hours] (default: [200, 0, 0] = 200 seconds)
+            program_id: The ID of the irrigation program to create events for
+            dtstart: Start timestamp in milliseconds for the first irrigation event (default: current time)
+            interval_minutes: Interval in minutes between events (default: 60)
+            n: Number of irrigation events to create (default: 1)
+            quantity_second: Irrigation duration in seconds (default: 200)
             ec_setpoint: Electrical conductivity setpoint value (default: 1.9)
-            
+            ph_setpoint: pH setpoint value (default: 5.1)
+
         Returns:
-            dict: Response data containing event id and duration
+            dict or list: Single event dict if n=1, list of events if n>1
         """
         url = "https://demo.mimosatek.com/api/monitor"
         
@@ -235,63 +261,106 @@ class api_for_all:
                 }
             }
         """
+            
+        results = []
+        interval_ms = interval_minutes * 60 * 1000  # Convert minutes to milliseconds
         
-        # Set default values
-        if quantity is None:
-            quantity = [200, 0, 0]
-        
-        # Build event object with direct values
-        event = {
-            "area_id": "16106380-f811-11ef-8831-112b9cc8d9f8",
-            "name": "KV2",
-            "strict_time": False,
-            "dtstart": dtstart,
-            "irrigation_method": 0,
-            "quantity": quantity,
-            "nutrients_mixing_program": {
-                "name": "sos",
-                "mixing_type": 1,
-                "ph_setpoint": 5.1,
-                "ec_setpoint": ec_setpoint,
-                "rates": [3, 5, 0, 0, 5]
-            },
-            "recurrence": "INTERVAL=1;FREQ=DAILY;UNTIL=20260621T165959Z"
-        }
-        
-        # Build payload with direct values
-        payload = {
-            "query": query,
-            "variables": {
-                "program_id": "4c17ad40-54d6-11f0-83a2-b5dfc26d8446",
-                "event": event,
-                "stored_as_template": False,
-                "template_name": ""
+        for i in range(n):
+            # Calculate the dtstart for this iteration
+            current_dtstart = dtstart + (i * interval_ms)
+            
+            # Build event object with direct values
+            area_id = "16106380-f811-11ef-8831-112b9cc8d9f8" 
+            area_name = "Test Event" 
+            event = {
+                "area_id": area_id,
+                "name": area_name,
+                "strict_time": False,
+                "dtstart": current_dtstart,
+                "irrigation_method": 0,
+                "quantity": [quantity_second, 0, 0],
+                "nutrients_mixing_program": {
+                    "name": "",
+                    "mixing_type": 1,
+                    "ph_setpoint": ph_setpoint,
+                    "ec_setpoint": ec_setpoint,
+                    "rates": [3, 5, 0, 0, 5]
+                },
+                "recurrence": "INTERVAL=1;FREQ=DAILY;UNTIL=20260621T165959Z"
             }
-        }
-        
-        headers = {
-            'accept': '*/*',
-            'accept-encoding': 'gzip, deflate, br',
-            'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
-            'authorization': self.token,
-            'Content-Type': 'application/json'
-        }
-        
-        try:
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
             
-            response_data = response.json()
+            # Build payload with direct values
+            payload = {
+                "query": query,
+                "variables": {
+                    "program_id": program_id,
+                    "event": event,
+                    "stored_as_template": False,
+                    "template_name": ""
+                }
+            }
             
-            if "data" in response_data and "create_irrigation_event" in response_data["data"]:
-                return response_data["data"]["create_irrigation_event"]
-            else:
-                raise ValueError("Invalid response format")
+            headers = {
+                'accept': '*/*',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
+                'authorization': self.token,
+                'Content-Type': 'application/json'
+            }
+            
+            try:
+                response = requests.post(url, headers=headers, json=payload)
+                response.raise_for_status()
                 
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Request failed: {e}")
-        except (KeyError, ValueError) as e:
-            raise Exception(f"Failed to parse response: {e}")
+                response_data = response.json()
+                
+                if "data" in response_data and "create_irrigation_event" in response_data["data"]:
+                    event_result = response_data["data"]["create_irrigation_event"]
+                    
+                    # Add additional info about the iteration (only if n > 1)
+                    if n > 1:
+                        event_result['iteration'] = i + 1
+                        event_result['dtstart'] = current_dtstart
+                        event_result['scheduled_time'] = datetime.fromtimestamp(current_dtstart / 1000).isoformat()
+                        logger.info(f"Created irrigation event {i+1}/{n} at {event_result['scheduled_time']}")
+                    
+                    results.append(event_result)
+                else:
+                    raise ValueError("Invalid response format")
+                    
+            except requests.exceptions.RequestException as e:
+                if n > 1:
+                    # Log error and continue with next iteration for multiple events
+                    error_result = {
+                        'iteration': i + 1,
+                        'dtstart': current_dtstart,
+                        'scheduled_time': datetime.fromtimestamp(current_dtstart / 1000).isoformat(),
+                        'error': str(e),
+                        'status': 'failed'
+                    }
+                    results.append(error_result)
+                    logger.error(f"Failed to create irrigation event {i+1}/{n}: {e}")
+                else:
+                    # For single event, raise the exception
+                    raise Exception(f"Request failed: {e}")
+            except (KeyError, ValueError) as e:
+                if n > 1:
+                    # Log error and continue with next iteration for multiple events
+                    error_result = {
+                        'iteration': i + 1,
+                        'dtstart': current_dtstart,
+                        'scheduled_time': datetime.fromtimestamp(current_dtstart / 1000).isoformat(),
+                        'error': str(e),
+                        'status': 'failed'
+                    }
+                    results.append(error_result)
+                    logger.error(f"Failed to create irrigation event {i+1}/{n}: {e}")
+                else:
+                    # For single event, raise the exception
+                    raise Exception(f"Failed to parse response: {e}")
+        
+        # Return single event if n=1, list if n>1
+        return results[0] if n == 1 else results
 
     def get_weather_forecast(self) -> Dict[str, Any]:
         """
@@ -385,55 +454,125 @@ class api_for_all:
         except Exception as e:
             return {"error": str(e), "status": "failed"}
     
-    def create_continuous_irrigation_schedule(self, dtstart: int, n: int = 1, quantity: list = None, ec_setpoint: float = 1.9) -> list:
+    def get_list_area_by_farm(self, farm_id: str) -> Any:
         """
-        Create multiple irrigation events for continuous irrigation schedule.
+        Get list of areas for a specific farm from Mimosatek API.
         
         Args:
-            dtstart: Start timestamp in milliseconds for the first irrigation event
-            n: Number of irrigation events to create (default: 1)
-            quantity: List of irrigation duration values [seconds, minutes, hours]. Only the first index (seconds) is actively used for irrigation duration. Format: [seconds, minutes, hours] (default: [200, 0, 0] = 200 seconds)
-            ec_setpoint: Electrical conductivity setpoint value (default: 1.9)
+            farm_id: The ID of the farm to get areas for
             
         Returns:
-            list: List of created irrigation events with their IDs and durations
+            dict: List of areas data including plant information
         """
-        results = []
-        interval_minutes = 60
-        interval_ms = interval_minutes * 60 * 1000  # Convert minutes to milliseconds
+        url = "https://demo.mimosatek.com/api/monitor"
         
-        for i in range(n):
-            # Calculate the dtstart for this iteration
-            current_dtstart = dtstart + (i * interval_ms)
-            
-            try:
-                # Create irrigation event using the existing method
-                event_result = self.create_irrigation_event(
-                    dtstart=current_dtstart,
-                    quantity=quantity,
-                    ec_setpoint=ec_setpoint
-                )
-                
-                # Add additional info about the iteration
-                event_result['iteration'] = i + 1
-                event_result['dtstart'] = current_dtstart
-                event_result['scheduled_time'] = datetime.fromtimestamp(current_dtstart / 1000).isoformat()
-                
-                results.append(event_result)
-                
-                # Log successful creation
-                logger.info(f"Created irrigation event {i+1}/{n} at {event_result['scheduled_time']}")
-                
-            except Exception as e:
-                # Log error and continue with next iteration
-                error_result = {
-                    'iteration': i + 1,
-                    'dtstart': current_dtstart,
-                    'scheduled_time': datetime.fromtimestamp(current_dtstart / 1000).isoformat(),
-                    'error': str(e),
-                    'status': 'failed'
+        # GraphQL query for areas by farm
+        query = """
+            query areas($farm_id: ID!) {
+                areas(farm_id: $farm_id) {
+                    id
+                    name
+                    start_at
+                    end_at
+                    latest_signal_at
+                    irrigation_recommendations_system
+                    plant {
+                        name
+                        code
+                        type
+                    }
                 }
-                results.append(error_result)
-                logger.error(f"Failed to create irrigation event {i+1}/{n}: {e}")
+            }
+        """
         
-        return results
+        payload = {
+            "query": query,
+            "variables": {
+                "farm_id": farm_id
+            }
+        }
+        
+        headers = {
+            'accept': '*/*',
+            'accept-encoding': 'gzip, deflate, br',
+            'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
+            'authorization': self.token,
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            
+            response_data = response.json()
+            
+            if "data" in response_data and "areas" in response_data["data"]:
+                resp = []
+                for i in response_data["data"]["areas"]:
+                    area_info = {
+                        "farm_id": farm_id,
+                        "area_name": i["name"],
+                        "area_id": i["id"]
+                    }
+                    resp.append(area_info)
+                return resp
+            else:
+                raise ValueError("Invalid response format")
+                
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Request failed: {e}")
+        except (KeyError, ValueError) as e:
+            raise Exception(f"Failed to parse response: {e}")
+    
+    def create_program(self, controller_id: str) -> Any:
+        """
+        Create a new irrigation program using Mimosatek API.
+        
+        Args:
+            controller_id: The ID of the controller to create the program for
+            
+        Returns:
+            dict: Response data from program creation
+        """
+        url = "https://demo.mimosatek.com/api/monitor"
+        
+        # GraphQL mutation for creating irrigation program
+        query = """
+            mutation Create_irrigation_program ($controller_id: ID!, $name: String!) {
+                create_irrigation_program(controller_id: $controller_id, name: $name)
+            }
+        """
+        
+        name = "irrigation program_" + str(int(time.time()))
+        payload = {
+            "query": query,
+            "variables": {
+                "controller_id": controller_id,
+                "name": name
+            }
+        }
+        
+        headers = {
+            'accept': '*/*',
+            'accept-encoding': 'gzip, deflate, br',
+            'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
+            'authorization': self.token,
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            
+            response_data = response.json()
+            
+            if "data" in response_data and "create_irrigation_program" in response_data["data"]:
+                return {"program_id": response_data["data"]["create_irrigation_program"]}
+            else:
+                raise ValueError("Invalid response format")
+                
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Request failed: {e}")
+        except (KeyError, ValueError) as e:
+            raise Exception(f"Failed to parse response: {e}")
+

@@ -21,148 +21,163 @@ class AgricultureToolkit(Toolkit):
         self.register(self.get_irrigation_events)
         self.register(self.get_weather_forecast)
         self.register(self.create_irrigation_event)
-        self.register(self.create_continuous_irrigation_schedule)
+        # self.register(self.get_list_area_by_farm)
+        self.register(self.create_program)
+        self.register(self.get_controller_id_by_farm)
 
-    def get_program_schedule(self, before_days: int = 1, after_days: int = 1) -> str:
+    def get_program_schedule(self, program_id: str, before_days: int = -1, after_days: int = 1) -> str:
         """
         Get program schedule from Mimosatek API showing irrigation timing and activities.
         
         Args:
-            before_days (int): Number of days before the current date to include in the schedule
-            after_days (int): Number of days after the current date to include in the schedule
+            program_id (str): The ID of the irrigation program
+            before_days (int): Number of days before the current date to include in the schedule (default: -1)
+            after_days (int): Number of days after the current date to include in the schedule (default: 1)
 
         Returns:
             str: Program schedule data with timing, duration, and area information
         """
         try:
-            logger.info("Getting program schedule")
+            logger.info(f"Getting program schedule for program: {program_id}")
             
-            result = self.api_client.get_program_schedule(before_days=before_days, after_days=after_days)
+            result = self.api_client.get_program_schedule(
+                program_id=program_id, 
+                before_days=before_days, 
+                after_days=after_days
+            )
             
             return str(result) if result else "No schedule data available"
             
         except Exception as e:
             logger.error(f"Error getting program schedule: {e}")
             return f"Error retrieving program schedule: {str(e)}"
-    
-    def get_irrigation_events(self) -> str:
+
+    def get_irrigation_events(self, program_id: str) -> str:
         """
         Get list of irrigation events and their configuration from Mimosatek API.
         
+        Args:
+            program_id (str): The ID of the irrigation program to get events for
+
         Returns:
             str: Irrigation events data with nutrients, timing, and configuration details
         """
         try:
-            logger.info("Getting irrigation events")
-            
-            result = self.api_client.get_irrigation_events()
-            
+            logger.info(f"Getting irrigation events for program: {program_id}")
+
+            result = self.api_client.get_irrigation_events(program_id=program_id)
+
             return str(result) if result else "No irrigation events available"
             
         except Exception as e:
             logger.error(f"Error getting irrigation events: {e}")
             return f"Error retrieving irrigation events: {str(e)}"
 
-    def create_irrigation_event(self, dtstart: int, quantity: Optional[List[int]] = None,
-                                ec_setpoint: float = 1.9) -> str:
+    def create_irrigation_event(self, program_id: str, dtstart: int, interval_minutes: int = 60, n: int = 1,
+                                quantity_second: int = 200, ec_setpoint: float = 1.9,
+                                ph_setpoint: float = 5.1) -> str:
         """
-        Create a new irrigation event in the Mimosatek API.
+        Create or Edit Choiirrigation event(s) using Mimosatek API.
 
         Args:
-            dtstart (int): Start time of the event (timestamp in ms).
-            quantity (Optional[List[int]], optional): List of irrigation duration values [seconds, minutes, hours]. Only the first index (seconds) is actively used for irrigation duration. Format: [seconds, minutes, hours] (default: [200, 0, 0] = 200 seconds).
+            program_id (str): The ID of the irrigation program to create events for.
+            dtstart (int): Start time of the first event (timestamp in ms) (default: current time).
+            interval_minutes (int, optional): Interval in minutes between events (default: 60).
+            n (int, optional): Number of irrigation events to create (default: 1).
+            quantity_second (int, optional): Irrigation duration in seconds (default: 200).
             ec_setpoint (float, optional): Electrical conductivity setpoint value (default: 1.9).
+            ph_setpoint (float, optional): pH setpoint value (default: 5.1).
 
         Returns:
-            str: Result message.
+            str: Result message. Single event dict if n=1, list of events if n>1.
         """
         try:
-            # Đảm bảo quantity luôn là danh sách hợp lệ
-            if quantity is None or not isinstance(quantity, list):
-                quantity = [200, 0, 0]  # Giá trị mặc định
-
-            logger.info("Creating irrigation event")
+            logger.info(f"Creating {n} irrigation event(s)")
             result = self.api_client.create_irrigation_event(
+                program_id=program_id,
                 dtstart=dtstart,
-                quantity=quantity,
+                interval_minutes=interval_minutes,
+                n=n,
+                quantity_second=quantity_second,
                 ec_setpoint=ec_setpoint,
+                ph_setpoint=ph_setpoint
             )
             return str(result) if result else "Failed to create irrigation event"
         except Exception as e:
             logger.error(f"Error creating irrigation event: {e}")
             return f"Error creating irrigation event: {str(e)}"
 
-    def create_continuous_irrigation_schedule(self, dtstart: int, n: int = 1, quantity: Optional[List[int]] = None,
-                                              ec_setpoint: float = 1.9) -> str:
+    # def get_list_area_by_farm(self, farm_id: str) -> str:
+    #     """
+    #     Get list of areas for a specific farm from Mimosatek API.
+        
+    #     Args:
+    #         farm_id (str): The ID of the farm to get areas for
+            
+    #     Returns:
+    #         str: List of areas data including plant information
+    #     """
+    #     try:
+    #         logger.info(f"Getting areas for farm: {farm_id}")
+            
+    #         result = self.api_client.get_list_area_by_farm(farm_id=farm_id)
+            
+    #         return str(result) if result else "No areas found for this farm"
+            
+    #     except Exception as e:
+    #         logger.error(f"Error getting areas for farm: {e}")
+    #         return f"Error retrieving areas for farm: {str(e)}"
+
+    def create_program(self, controller_id: str) -> str:
         """
-        Create a continuous irrigation schedule by generating multiple irrigation events.
-
+        Create a new irrigation program using Mimosatek API (Always call when creating or editing irrigation events).
+        
         Args:
-            dtstart (int): Start time of the first event (timestamp in ms).
-            n (int, optional): Number of events to create (default: 1).
-            quantity (Optional[List[int]], optional): List of irrigation duration values [seconds, minutes, hours]. Only the first index (seconds) is actively used for irrigation duration. Format: [seconds, minutes, hours] (default: [200, 0, 0] = 200 seconds).
-            ec_setpoint (float, optional): Electrical conductivity setpoint value (default: 1.9).
-
+            controller_id (str): The ID of the controller to create the program for
+            
         Returns:
-            str: Result message.
+            str: Response data from program creation
         """
         try:
-            if quantity is None or not isinstance(quantity, list):
-                quantity = [200, 0, 0]  # Giá trị mặc định
-
-            logger.info("Creating continuous irrigation schedule")
-            results = self.api_client.create_continuous_irrigation_schedule(
-                dtstart=dtstart,
-                n=n,
-                quantity=quantity,
-                ec_setpoint=ec_setpoint,
-            )
-            return str(results) if results else "Failed to create continuous irrigation schedule"
+            logger.info(f"Creating program for controller: {controller_id}")
+            result = self.api_client.create_program(controller_id=controller_id)
+            return str(result) if result else "Failed to create program"
+            
         except Exception as e:
-            logger.error(f"Error creating continuous irrigation schedule: {e}")
-            return f"Error creating continuous irrigation schedule: {str(e)}"
+            logger.error(f"Error creating program: {e}")
+            return f"Error creating program: {str(e)}"
+
+    def get_controller_id_by_farm(self) -> str:
+        """
+        Get the controller ID.
+            
+        Returns:
+            str: The controller ID information
+        """
+        try:
+
+            result = self.api_client.get_controller_id_by_farm()
+
+            return str(result) if result else "No controller found for this farm"
+            
+        except Exception as e:
+            logger.error(f"Error getting controller ID for farm: {e}")
+            return f"Error retrieving controller ID: {str(e)}"
 
     def get_weather_forecast(self) -> str:
-            """
-            Get weather forecast for a specific crop with irrigation recommendations.
-                
-            Returns:
-                str: Weather forecast information for the specified crop
-            """
-            try:
-                logger.info(f"Getting weather forecast")
-                result = self.api_client.get_weather_forecast()
-                return str(result) if result else f"No weather forecast"
-            except Exception as e:
-                logger.error(f"Error getting weather forecast: {e}")
-                return f"Error retrieving weather forecast: {str(e)}"
-            
-    # Convenience methods that combine multiple data sources
-    def get_irrigation_status(self) -> str:
         """
-        Get comprehensive irrigation status by combining events and schedule data.
-        
+        Get weather forecast for a specific crop with irrigation recommendations.
+            
         Returns:
-            str: Combined irrigation status information
+            str: Weather forecast information for the specified crop
         """
         try:
-            logger.info("Getting comprehensive irrigation status")
-            
-            # Get both events and schedule data
-            events_result = self.api_client.get_irrigation_events()
-            schedule_result = self.api_client.get_program_schedule()
-            
-            status_data = {
-                "irrigation_events": events_result,
-                "program_schedule": schedule_result,
-                "timestamp": json.dumps({"current_time": str(datetime.now())})
-            }
-            
-            return str(status_data)
-            
+            logger.info(f"Getting weather forecast")
+            result = self.api_client.get_weather_forecast()
+            return str(result) if result else f"No weather forecast"
         except Exception as e:
-            logger.error(f"Error getting irrigation status: {e}")
-            return f"Error retrieving irrigation status: {str(e)}"
+            logger.error(f"Error getting weather forecast: {e}")
+            return f"Error retrieving weather forecast: {str(e)}"
 
 class TimeToolkit(Toolkit):
     def __init__(self):
