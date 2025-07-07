@@ -127,7 +127,16 @@ def get_assistant_agent(user_id: str = "default_user") -> Agent:
     <rule>Always validate tool outputs and schedule integrity.</rule>
     <rule>Request explicit user confirmation before modifying, deleting, or adding schedules.</rule>
     <rule>If insufficient data is available, respond: “No reliable schedule data available at this time.”</rule>
+    <modification_policy>
+      For tasks that involve modifying the irrigation schedule — including changes to start time, duration, water quantity, or parameters such as EC (electrical conductivity setpoint) — follow this protocol:
+
+      <step>1. Retrieve the current irrigation schedule using <tool>get_program_schedule()</tool> and <tool>get_irrigation_events()</tool>.</step>
+      <step>2. Check whether a valid schedule exists. If no schedule is found, inform the user: “No current irrigation schedule found. Please create a schedule before attempting modifications.”</step>
+      <step>3. If a schedule exists, analyze relevant parameters and apply changes according to the user’s request, ensuring compliance with system constraints and weather conditions.</step>
+      <step>4. Always request explicit user confirmation before applying any modifications.</step>
+    </modification_policy>
   </execution_protocol>
+
 </agent>
 
 """,
