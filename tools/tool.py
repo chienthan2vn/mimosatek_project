@@ -19,11 +19,13 @@ class IrrigationTools(Toolkit):
         
         self.register(self.create_irrigation_schedule)
         self.register(self.show_irrigation_schedule)
+        self.register(self.controllers_by_farm_id)
+        self.register(self.list_area_by_farm_id)
     
     def create_irrigation_schedule(
         self,
-        farm_id: str,
         area_id: str,
+        controller_id: str,
         number_of_events: int = 1,
         dtstart: int = int(datetime.now().timestamp()),
         quantity: List[int] = [180, 0, 0],
@@ -34,8 +36,8 @@ class IrrigationTools(Toolkit):
         Create a new irrigation schedule for a given farm and area.
         
         Args:
-            farm_id (str): The ID of the farm.
             area_id (str): The ID of the irrigation area.
+            controller_id (str): The ID of the controller to create the program for.
             number_of_events (int): Number of irrigation events to create (default: 1). 
             dtstart (int): Start datetime in timestamp (default: current time).
             quantity (List[int]): Quantity values for irrigation. (default: [180, 0, 0] = 180 seconds)
@@ -46,17 +48,16 @@ class IrrigationTools(Toolkit):
             List[Dict[str, Any]]: List of created irrigation events with their details.
         """
         try:
-            
+
             # Create controller_id for the irrigation area
             program_id = self.api_handler.create_program(
-                farm_id=farm_id,
-                area_id=area_id
+                controller_id=controller_id
             ).get("program_id")
             if not program_id:
                 raise Exception("Failed to create irrigation program")
             
             logger.info(f"Created irrigation program with ID: {program_id}")
-            
+
             response = self.api_handler.create_irrigation_events(
                 program_id=program_id,
                 area_id=area_id,
@@ -89,8 +90,35 @@ class IrrigationTools(Toolkit):
             return response
         except Exception as e:
             raise Exception(f"Failed to list irrigation events: {e}")
+
+    def controllers_by_farm_id(self, farm_id: str = "5c182350-1866-4c9f-ac68-2eb7e5336d1d") -> List[Dict[str, Any]]:
+        """
+        Get a list of controllers by farm ID.
+
+        Args:
+            farm_id (str): The ID of the farm. Default is "5c182350-1866-4c9f-ac68-2eb7e5336d1d".
+
+        Returns:
+            List[Dict[str, Any]]: A list of controllers with their names and IDs.
+        """
+        try:
+            response = self.api_handler.get_controllers_by_farm_id(farm_id=farm_id)
+            return response
+        except Exception as e:
+            raise Exception(f"Failed to get controllers by farm ID: {e}")
     
-    
-    
-        
-    
+    def list_area_by_farm_id(self, farm_id: str = "5c182350-1866-4c9f-ac68-2eb7e5336d1d") -> List[Dict[str, Any]]:
+        """
+        Get a list of areas by farm ID.
+
+        Args:
+            farm_id (str): The ID of the farm. Default is "5c182350-1866-4c9f-ac68-2eb7e5336d1d".
+
+        Returns:
+            List[Dict[str, Any]]: A list of areas with their names and IDs.
+        """
+        try:
+            response = self.api_handler.get_list_area_by_farm_api(farm_id=farm_id)
+            return response
+        except Exception as e:
+            raise Exception(f"Failed to get areas by farm ID: {e}")

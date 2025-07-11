@@ -1,8 +1,6 @@
 import json
 from typing import Dict, Any, List
 
-
-
 def get_payload_of_create_program_api(controller_id: str) -> Dict[str, Any]:
     """
     Prepare the payload for creating a new irrigation program.
@@ -76,6 +74,43 @@ def get_payload_of_list_programs_irrigation_envents_api(program_id: str) -> Dict
     
     return payload
     
+def get_list_area_by_farm_api(farm_id: str) -> Dict[str, Any]:
+    """
+    Prepare the payload for listing areas by farm ID.
+
+    Args:
+        farm_id (str): The ID of the farm to list areas for.
+
+    Returns:
+        Dict[str, Any]: The payload for the API request.
+    """
+    query = """
+        query areas($farm_id: ID!) {
+            areas(farm_id: $farm_id) {
+                id
+                name
+                start_at
+                end_at
+                latest_signal_at
+                irrigation_recommendations_system
+                plant {
+                    name
+                    code
+                    type
+                }
+            }
+        }
+    """
+        
+    payload = {
+        "query": query,
+        "variables": {
+            "farm_id": farm_id
+        }
+    }
+    
+    return payload
+
 def get_payload_for_create_irrigation_event_api(
     program_id: str,
     area_id: str,
@@ -137,5 +172,151 @@ def get_payload_for_create_irrigation_event_api(
         "variables": variables
     }
     
+    
+    return payload
+
+def get_payload_for_controllers_api(farm_id: str) -> Dict[str, Any]:
+    """
+    Prepare the payload for listing controllers by farm ID.
+
+    Args:
+        farm_id (str): The ID of the farm to list controllers for.
+
+    Returns:
+        Dict[str, Any]: The payload for the API request.
+    """
+    query = """
+    query controllers($farm_id: ID!) {
+        controllers(farm_id: $farm_id) {
+            id
+            name
+            type
+            topic
+            latest_signal_at
+            subscription_plan
+            state
+            valve_mode
+            nodes {
+                area_id
+                node_id
+                area_name
+            }
+            current_program {
+                id
+                name
+            }
+            current_area {
+                id
+                name
+                start_at
+                end_at
+                latest_signal_at
+                plant_total
+                plants_per_pot
+                status
+                plant_density
+                latitude
+                longitude
+                tz_longitude
+                elevation_sea_level
+                wind_sensor_elevation
+                efficient_moisture_ratio
+                irrigation_recommendations_system
+                irs_use_solar_time
+                ETC
+                availableSensors
+                time_to_refill
+            }
+            current_areas {
+                id
+                name
+                start_at
+                end_at
+                latest_signal_at
+                plant_total
+                plants_per_pot
+                status
+                plant_density
+                latitude
+                longitude
+                tz_longitude
+                elevation_sea_level
+                wind_sensor_elevation
+                efficient_moisture_ratio
+                irrigation_recommendations_system
+                irs_use_solar_time
+                ETC
+                availableSensors
+                time_to_refill
+            }
+            notification_settings {
+                malfunctions_only
+            }
+            valves {
+                status
+                setting
+            }
+            latest_ph {
+                value
+                unit
+                ts
+            }
+            latest_ec {
+                value
+                unit
+                ts
+            }
+            threshold_reaction {
+                loaded_by
+                csv_name
+                ts
+                status
+            }
+            tanks {
+                type
+                design_volume
+                design_weight
+                filled_volume
+                filled_weight
+                filled_at
+                current_volume
+                current_weight
+            }
+            tanks_refill_timeline {
+                ts
+                value {
+                    type
+                    design_volume
+                    design_weight
+                    filled_volume
+                    filled_weight
+                    filled_at
+                    current_volume
+                    current_weight
+                }
+                by {
+                    id
+                    username
+                }
+            }
+            tanks_refill_feed {
+                cursor
+                limit
+                has_more
+            }
+        }
+    }
+    """
+    
+    variables = {
+        "farm_id": farm_id,
+        "hourlyLimit": 4000,
+        "dailyLimit": 100
+    }
+    
+    payload = {
+        "query": query,
+        "variables": variables
+    }
     
     return payload

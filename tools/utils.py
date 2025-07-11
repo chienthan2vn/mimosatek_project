@@ -1,4 +1,7 @@
 import os
+from textwrap import dedent
+from agno.agent import Agent
+from agno.models.google import Gemini
 import json
 import logging
 import requests
@@ -6,7 +9,9 @@ from typing import List, Optional, Dict, Any
 
 from tools.payload import (get_payload_of_create_program_api,
                            get_payload_of_list_programs_irrigation_envents_api,
-                           get_payload_for_create_irrigation_event_api)
+                           get_payload_for_create_irrigation_event_api,
+                           get_list_area_by_farm_api,
+                           get_payload_for_controllers_api)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -70,49 +75,82 @@ class APIHandler:
             except (KeyError, ValueError) as e:
                 raise Exception(f"Failed to extract token from response: {e}")
             
-    @staticmethod
-    def get_controller_id_by_farm_and_area_id(farm_id: str, area_id: str) -> Dict[str, Any]:
-        """
-        Get the controller ID based on farm and area IDs.
+    # @staticmethod
+    # def get_controller_id_by_farm_and_area_id(farm_id: str, area_id: str) -> Dict[str, Any]:
+    #     """
+    #     Get the controller ID based on farm and area IDs.
         
+    #     Args:
+    #         farm_id (str): The ID of the farm.
+    #         area_id (str): The ID of the area.
+        
+    #     Returns:
+    #         str: The controller ID.
+    #     """
+
+    #     #TODO: Implement the logic to retrieve the controller ID based on farm and area IDs.s
+    #     try:
+    #         return {
+    #             "farm_id": farm_id,
+    #             "area_id": area_id,
+    #             "controller_id": "4034b240-6fc1-11ed-9cbe-f9420b7f5b37"  # Replace with actual logic to get controller ID
+    #         }
+    #     except Exception as e:
+    #         logger.error(f"Error getting controller ID for farm {farm_id} and area {area_id}: {e}")
+    #         raise Exception(f"Failed to get controller ID: {e}")
+
+    def get_list_area_by_farm_api(self, farm_id: str) -> Dict[str, Any]:
+        """
+        Get a list of areas by farm ID.
+
         Args:
             farm_id (str): The ID of the farm.
-            area_id (str): The ID of the area.
-        
+
         Returns:
-            str: The controller ID.
+            List[Dict[str, Any]]: A list of areas with their names and IDs.
         """
-
-        #TODO: Implement the logic to retrieve the controller ID based on farm and area IDs.s
-        try:
-            return {
-                "farm_id": farm_id,
-                "area_id": area_id,
-                "controller_id": "4034b240-6fc1-11ed-9cbe-f9420b7f5b37"  # Replace with actual logic to get controller ID
-            }
-        except Exception as e:
-            logger.error(f"Error getting controller ID for farm {farm_id} and area {area_id}: {e}")
-            raise Exception(f"Failed to get controller ID: {e}")
-    
-
+        try: 
+            payload = get_list_area_by_farm_api(farm_id=farm_id)
+            response = requests.post(
+                self.url,
+                headers=self.headers,
+                json=payload
+            )
+            response.raise_for_status()
+            response_data = response.json()
+            
+            if "data" in response_data and "areas" in response_data["data"]:
+                resp = []
+                for i in response_data["data"]["areas"]:
+                    area_info = {
+                        "farm_id": farm_id,
+                        "area_name": i["name"],
+                        "area_id": i["id"]
+                    }
+                    resp.append(area_info)
+                return resp
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Request failed: {e}")
+        except (KeyError, ValueError) as e:
+            raise Exception(f"Failed to parse response: {e}")
+        
     def create_program(
             self,
-            farm_id: str,
-            area_id: str,
+            controller_id: str,
         ) -> Dict[str, Any]:
         """
         Create a new irrigation program.
         
         Args:
-            controler_id (str): The ID of the controller to create the program for.
-        
+            controller_id (str): The ID of the controller to create the program for.
+
         Returns:
             Dict[str, Any]: The response from the API.
         """
         try:
            
-            controller_info = APIHandler().get_controller_id_by_farm_and_area_id(farm_id=farm_id, area_id=area_id)
-            controller_id = controller_info.get("controller_id")
+            # controller_info = APIHandler().get_controller_id_by_farm_and_area_id(farm_id=farm_id, area_id=area_id)
+            # controller_id = controller_info.get("controller_id")
             logger.info(f"Controller ID: {controller_id}")
             
             
@@ -138,8 +176,6 @@ class APIHandler:
                 return {
                     "program_id": program_id,
                     "controller_id": controller_id,
-                    "farm_id": farm_id,
-                    "area_id": area_id
                 }
             else:
                 raise ValueError("Invalid response format or program creation failed")
@@ -188,7 +224,6 @@ class APIHandler:
         except Exception as e:
             logger.error(f"Error listing irrigation events for program {program_id}: {e}")
             raise Exception(f"Failed to list irrigation events: {e}")   
-    
     
     def create_irrigation_events(
         self,
@@ -259,27 +294,83 @@ class APIHandler:
         except Exception as e:
             logger.error(f"Error creating irrigation event {i+1} for program {program_id}: {e}")
             raise Exception(f"Failed to create irrigation event: {e}")
-        
-        
-# Test API
-# api_handler = APIHandler()
-# print(f"Token: {api_handler.token}")
-# response = api_handler.create_program(farm_id="95c3d870-7fab-11ef-bfc9-113ee5630d77", area_id="16106380-f811-11ef-8831-112b9cc8d9f8")
-# print(f"Program created: {response}")
-# program_id = response.get("program_id")
-# program_id = "fda5c0f0-5b5d-11f0-83a2-b5dfc26d8446"
-# farm_id = "95c3d870-7fab-11ef-bfc9-113ee5630d77"
-# area_id = "16106380-f811-11ef-8831-112b9cc8d9f8"
 
-# from datetime import datetime
-# events = api_handler.create_irrigation_events(
-#     program_id=program_id,
-#     area_id=area_id,
-#     dtstart=int(datetime.now().timestamp()),  # Example timestamp
-#     quantity=[180, 0, 0],  # Example quantities
-#     ph_setpoint=5.1,
-#     ec_setpoint=1.9,
-#     number_of_events=10
-# )
+    def get_controllers_by_farm_id(self, farm_id: str) -> List[Dict[str, Any]]:
+        """
+        Get a list of controllers by farm ID.
 
-# print(events)
+        Args:
+            farm_id (str): The ID of the farm.
+
+        Returns:
+            List[Dict[str, Any]]: A list of controllers with their detailed information.
+        """
+        try:
+            payload = get_payload_for_controllers_api(farm_id=farm_id)
+            logger.info(f"Payload for getting controllers: {json.dumps(payload, indent=2)}")
+            
+            response = requests.post(
+                self.url,
+                headers=self.headers,
+                json=payload
+            )
+            
+            response.raise_for_status()  # Raise an exception for bad status codes
+            logger.info(f"Status code: {response.status_code}")
+            
+            response_data = response.json()
+            # logger.info(f"Response data: {json.dumps(response_data, indent=2)}")
+            
+            if "data" in response_data and "controllers" in response_data["data"]:
+                results = []
+                controllers = response_data["data"]["controllers"]
+                for controller in controllers:
+                    controller_id = controller.get("id")
+                    temp_data = {
+                        "controller_id": controller_id,
+                        "nodes": []
+                    }
+                    if controller_id:
+                        for node in controller.get("nodes", []):
+                            area_id = node.get("area_id")
+                            area_name = node.get("area_name")
+                            temp = {"area_id": area_id, "area_name": area_name}
+                            temp_data["nodes"].append(temp)
+                    results.append(temp_data)
+                logger.info(f"Found {len(controllers)} controllers for farm {farm_id}")
+                return results
+            else:
+                raise ValueError("Invalid response format or no controllers found")
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request failed: {e}")
+            raise Exception(f"Request failed: {e}")
+        except (KeyError, ValueError) as e:
+            logger.error(f"Failed to parse response: {e}")
+            raise Exception(f"Failed to parse response: {e}")
+
+    # def get_controller_id_and_area_info_by_farm_id(
+    #     self,
+    #     area_name: str,
+    #     farm_id: str = "5c182350-1866-4c9f-ac68-2eb7e5336d1d",
+    # ) -> Dict[str, Any]:
+    #     """
+    #     Get the controller ID and area id and area name by farm ID and area name.
+
+    #     Args:
+    #         area_name (str): The name of the irrigation area.
+    #         farm_id (str): The ID of the farm. Default is "5c182350-1866-4c9f-ac68-2eb7e5336d1d".
+        
+    #     Returns:
+    #         Dict[str, Any]: A dictionary containing the controller ID, area information by farm id and area name.
+    #     """
+    #     try:
+    #         sub_agent = Agent(
+    #             model=Gemini(id="gemini-2.5-flash"),
+    #             name="get_controller_id_and_area_info",
+    #             description="Get the controller ID and area id and area name by farm ID.",
+
+    #         )
+    #     except Exception as e:
+    #         logger.error(f"Error getting controller ID and area info: {e}")
+    #         raise Exception(f"Failed to get controller ID and area info: {e}")
