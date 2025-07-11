@@ -1,7 +1,7 @@
 # Ignore Jupyter Notebook files
 *.ipynb
 *.env
-/tmp/
+tmp/
 
 # Ignore cache directories
 __pycache__/
