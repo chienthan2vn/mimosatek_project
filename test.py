@@ -1,19 +1,13 @@
-from agno.playground import Playground
 from agents.assistant import get_assistant_agent
 
-a = get_assistant_agent()
-
-playground = Playground(
-    agents=[a],
-    name="Basic Agent",
-    app_id="basic_agent",
-    description="A basic agent that can answer questions and help with tasks.",
-)
-
-app = playground.get_app()
-
-# For synchronous router:
-# app = fastapi_app.get_app(use_async=False)
-
 if __name__ == "__main__":
-    playground.serve(app="test:app", reload=True)
+    # Initialize the assistant agent
+    agent = get_assistant_agent()
+
+    farm_id = "95c3d870-7fab-11ef-bfc9-113ee5630d77"
+    area_id = "16106380-f811-11ef-8831-112b9cc8d9f8"
+    
+    while True:
+        user_input = input("Enter your request: ")
+        agent.print_response(f"{user_input}", stream = True)
+        print(agent.session_state)

@@ -7,6 +7,12 @@ import logging
 import requests
 from typing import List, Optional, Dict, Any
 
+import openmeteo_requests
+import requests_cache
+from retry_requests import retry
+import pandas as pd
+from datetime import datetime
+
 from tools.payload import (get_payload_of_create_program_api,
                            get_payload_of_list_programs_irrigation_envents_api,
                            get_payload_for_create_irrigation_event_api,
@@ -349,6 +355,98 @@ class APIHandler:
             logger.error(f"Failed to parse response: {e}")
             raise Exception(f"Failed to parse response: {e}")
 
+    def get_weather_forecast(self) -> Dict[str, Any]:
+        """
+        Get the weather forecast.
+            
+        Returns:
+            dict: weather data
+        """
+        try:
+            latitude=11.74
+            longitude=108.37
+            # Setup the Open-Meteo API client with cache and retry on error
+            cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
+            retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+            openmeteo = openmeteo_requests.Client(session=retry_session)
+
+            # Make sure all required weather variables are listed here
+            url = "https://api.open-meteo.com/v1/forecast"
+            start_date = datetime.now().strftime('%Y-%m-%d')
+            end_date = (datetime.now() + pd.DateOffset(days=1)).strftime('%Y-%m-%d')
+            
+            params = {
+                "latitude": latitude,
+                "longitude": longitude,
+                "hourly": ["temperature_2m", "relative_humidity_2m", "precipitation_probability", 
+                        "apparent_temperature", "et0_fao_evapotranspiration", "rain", "visibility"],
+                "models": "best_match",
+                "timezone": "Asia/Bangkok",
+                "start_date": start_date,
+                "end_date": end_date
+            }
+            responses = openmeteo.weather_api(url, params=params)
+
+            # Process first location
+            response = responses[0]
+            
+            # Process hourly data
+            hourly = response.Hourly()
+            hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
+            hourly_relative_humidity_2m = hourly.Variables(1).ValuesAsNumpy()
+            hourly_precipitation_probability = hourly.Variables(2).ValuesAsNumpy()
+            hourly_apparent_temperature = hourly.Variables(3).ValuesAsNumpy()
+            hourly_et0_fao_evapotranspiration = hourly.Variables(4).ValuesAsNumpy()
+            hourly_rain = hourly.Variables(5).ValuesAsNumpy()
+            hourly_visibility = hourly.Variables(6).ValuesAsNumpy()
+
+            # Create date range
+            date_range = pd.date_range(
+                start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
+                end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
+                freq=pd.Timedelta(seconds=hourly.Interval()),
+                inclusive="left"
+            )
+
+            # Build response data
+            weather_data = {
+                "location": {
+                    "latitude": float(response.Latitude()),
+                    "longitude": float(response.Longitude()),
+                    "elevation": float(response.Elevation()),
+                    "timezone": str(response.Timezone())
+                },
+                "forecast": []
+            }
+
+            # Convert numpy arrays to lists and combine with dates
+            for i, date in enumerate(date_range):
+                if i < len(hourly_temperature_2m):
+                    def safe_float_convert(value):
+                        """Safely convert numpy value to float or return None"""
+                        try:
+                            if pd.isna(value) or value is None:
+                                return None
+                            return float(value)
+                        except (ValueError, TypeError):
+                            return None
+                    
+                    weather_data["forecast"].append({
+                        "datetime": date.isoformat(),
+                        "temperature_2m": safe_float_convert(hourly_temperature_2m[i]),
+                        "relative_humidity_2m": safe_float_convert(hourly_relative_humidity_2m[i]),
+                        "precipitation_probability": safe_float_convert(hourly_precipitation_probability[i]),
+                        "apparent_temperature": safe_float_convert(hourly_apparent_temperature[i]),
+                        "et0_fao_evapotranspiration": safe_float_convert(hourly_et0_fao_evapotranspiration[i]),
+                        "rain": safe_float_convert(hourly_rain[i]),
+                        "visibility": safe_float_convert(hourly_visibility[i])
+                    })
+
+            return weather_data
+
+        except Exception as e:
+            return {"error": str(e), "status": "failed"}
+        
     # def get_controller_id_and_area_info_by_farm_id(
     #     self,
     #     area_name: str,

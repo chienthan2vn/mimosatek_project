@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
 from agno.tools.toolkit import Toolkit
+from agno.agent import Agent
 
 from tools.utils import APIHandler
 
@@ -21,7 +22,9 @@ class IrrigationTools(Toolkit):
         self.register(self.show_irrigation_schedule)
         self.register(self.controllers_by_farm_id)
         self.register(self.list_area_by_farm_id)
-    
+        self.register(self.agent_state)
+        self.register(self.weather_forecast)
+
     def create_irrigation_schedule(
         self,
         area_id: str,
@@ -48,7 +51,6 @@ class IrrigationTools(Toolkit):
             List[Dict[str, Any]]: List of created irrigation events with their details.
         """
         try:
-
             # Create controller_id for the irrigation area
             program_id = self.api_handler.create_program(
                 controller_id=controller_id
@@ -86,7 +88,7 @@ class IrrigationTools(Toolkit):
             List[Dict[str, Any]]: List of irrigation events with their details.
         """
         try:
-            response = self.api_handler.list_irrigation_events(program_id=program_id)
+            response = self.api_handler.list_programs_irrigation_events(program_id=program_id)
             return response
         except Exception as e:
             raise Exception(f"Failed to list irrigation events: {e}")
@@ -122,3 +124,28 @@ class IrrigationTools(Toolkit):
             return response
         except Exception as e:
             raise Exception(f"Failed to get areas by farm ID: {e}")
+
+    def agent_state(self, agent: Agent, controller_id: str, area_id: str, program_id: str) -> Dict[str, Any]:
+        """
+        Get the state of the agent with the given parameters.
+
+        Args:
+            agent (Agent): The agent instance.
+            controller_id (str): The current ID of the controller.
+            area_id (str): The current ID of the area.
+            program_id (str): The current ID of the program.
+        """
+        agent.session_state["controller_id"] = controller_id
+        agent.session_state["area_id"] = area_id
+        agent.session_state["program_id"] = program_id
+
+    def weather_forecast(
+        self,
+    ) -> Dict[str, Any]:
+        """
+        Get the weather forecast.
+
+        Returns:
+            Dict[str, Any]: weather forecast data.
+        """
+        return self.api_handler.get_weather_forecast()

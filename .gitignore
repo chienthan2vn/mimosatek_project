@@ -1,0 +1,10 @@
+# Ignore Jupyter Notebook files
+*.ipynb
+*.env
+/tmp/
+
+# Ignore cache directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

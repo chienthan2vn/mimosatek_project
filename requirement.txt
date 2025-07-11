@@ -1,0 +1,13 @@
+agno
+logging
+os
+textwrap
+datetime
+json
+requests
+requests_cache
+retry_requests
+pandas
+openmeteo_requests
+typing
+python-dotenv

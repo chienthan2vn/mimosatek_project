@@ -3,12 +3,14 @@ from textwrap import dedent
 from agno.agent import Agent
 from agno.models.google import Gemini
 from agno.storage.sqlite import SqliteStorage
+from dotenv import load_dotenv
 # from agno.memory.v2.memory import Memory
 # from agno.memory.v2.db.sqlite import SqliteMemoryDb
 
 from tools.tool import IrrigationTools
 
-os.environ["GOOGLE_API_KEY"] = "AIzaSyCI018tick4nbP3W0ChasZ1Tcn3TZAHPQE"
+load_dotenv()
+os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY", "GOOGLE_API_KEY")
 
 def get_assistant_agent(user_id: str = "default_user") -> Agent:
     db_file = "tmp/agent.db"
@@ -22,7 +24,7 @@ def get_assistant_agent(user_id: str = "default_user") -> Agent:
 
     return Agent(
         name="Irrigation Assistant",
-        role="You are a digital agriculture expert responsible for creating and updating daily irrigation schedules based on user requests. Use available tools to generate efficient and resource-optimized watering plans.",
+        agent_id="agriculture_assistant",
         description=dedent("""
             You are an agricultural expert assistant responsible for helping users create and adjust daily irrigation schedules. 
             Your main goal is to generate efficient watering plans based on user requirements and the tools available in the system. 
@@ -35,114 +37,69 @@ def get_assistant_agent(user_id: str = "default_user") -> Agent:
                 </role>
 
                 <tools>
-                    <tool name="list_area_by_farm_id">
-                        <description>
-                            Retrieve a list of areas for a given farm ID.
-                        </description>
-                        <parameters>
-                            <param name="farm_id" type="string" required="true">
-                                The ID of the farm to list areas for.
-                            </param>
-                        </parameters>
-                    </tool>
-
-                    <tool name="controllers_by_farm_id">
-                        <description>
-                            Retrieve a list of controllers for a given farm ID.
-                        </description>
-                        <parameters>
-                            <param name="farm_id" type="string" required="true">
-                                The ID of the farm to list controllers for.
-                            </param>
-                        </parameters>
-                    </tool>
-
-                    <tool name="create_irrigation_schedule">
-                        <description>
-                            Create a new irrigation schedule for a specific farm and area.
-                        </description>
-                        <parameters>
-                            <param name="area_id" type="string" required="true">
-                                The ID of the irrigation area within the farm.
-                            </param>
-                            <param name="controller_id" type="string" required="true">
-                                The ID of the controller to create the program for.
-                            </param>
-                            <param name="number_of_events" type="integer" required="false" default="1">
-                                Number of irrigation events to schedule. Default is 1.
-                            </param>
-                            <param name="dtstart" type="integer" required="false" default="now">
-                                Start time of the schedule in Unix timestamp format. Default is current time.
-                            </param>
-                            <param name="quantity" type="list[integer]" required="false" default="[180, 0, 0]">
-                                Duration of irrigation in seconds per zone. Default is 180 seconds for the first zone.
-                            </param>
-                            <param name="ph_setpoint" type="float" required="false" default="5.1">
-                                Desired pH level for the irrigation water. Default is 5.1.
-                            </param>
-                            <param name="ec_setpoint" type="float" required="false" default="1.9">
-                                Desired EC (Electrical Conductivity) level. Default is 1.9.
-                            </param>
-                        </parameters>
-                    </tool>
-
-                    <tool name="show_irrigation_schedule">
-                        <description>
-                            Retrieve all irrigation events for a given program ID.
-                        </description>
-                        <parameters>
-                            <param name="program_id" type="string" required="true">
-                                The ID of the irrigation program whose events should be retrieved.
-                            </param>
-                        </parameters>
-                    </tool>
+                    - list_area_by_farm_id: Retrieve a list of areas for a given farm ID.
+                    - controllers_by_farm_id: Retrieve a list of controllers for a given farm ID.
+                    - create_irrigation_schedule: Create a new irrigation schedule for a specific farm and area.
+                    - show_irrigation_schedule: Retrieve all irrigation events for a given program ID.
+                    - agent_state: Retrieve the current state of the agent with the given parameters.	
+                    - weather_forecast: Retrieve the weather forecast for a specific location.
                 </tools>
 
                 <rules>
                     <rule>
-                        Before creating or modifying a schedule, call <code>list_area_by_farm_id</code> to retrieve the list of areas for the given farm ID. If no matching area is found, suggest similar area names to the user for reference and allow them to re-enter the area name.
+                        - Always normalize and clarify the user's request to a clear, structured query before taking any further action.
+                        - Always using Vietnamese language for responses.    
                     </rule>
                     <rule>
-                        After confirming the area, call <code>controllers_by_farm_id</code> to retrieve the list of controllers for the given farm ID.
+                        Always determine the valid area_id and controller_id for a given farm (don't need user to verify):
+                        - Only call <code>list_area_by_farm_id</code> and <code>controllers_by_farm_id</code> when the user provides a new area name.
+                        - When calling <code>list_area_by_farm_id</code> to retrieve the list of areas for the given farm ID. If no matching area is found, suggest similar area names to the user for reference. After, allow the user to re-enter the area name until a valid one is confirmed.
+                        - After confirming a valid area, call <code>controllers_by_farm_id</code> to retrieve the list of controllers for the same farm ID.
                     </rule>
                     <rule>
-                        If the user wants to create a schedule, call <code>create_irrigation_schedule</code> using the user’s input (area_id, controller_id, dtstart, number_of_events, quantity, ph_setpoint, ec_setpoint).
+                        - If the user wants to create a schedule, call <code>create_irrigation_schedule</code>.
+                        - If the user wants to modify a schedule, first call <code>show_irrigation_schedule</code> to get current irrigation events, then use <code>create_irrigation_schedule</code> to generate a new one according to the requested changes and the current irrigation schedule.
+                        - If the user wants to recommend an irrigation schedule, first call <code>weather_forecast</code> to retrieve weather data as context, then call <code>create_irrigation_schedule</code> to generate a new one according to the requested changes and the weather data.
+                        - If the user wants to view the current irrigation schedule, call <code>show_irrigation_schedule</code> with the program ID.
                     </rule>
                     <rule>
-                        If the user wants to modify a schedule, first call <code>show_irrigation_schedule</code> to get current irrigation events, then use <code>create_irrigation_schedule</code> to generate a new one according to the requested changes.
+                        Always call <code>agent_state</code> last to retrieve the current state.
                     </rule>
                     <rule>
-                        If a tool parameter has a default value and the user does not provide it, suggest the default value and ask for user confirmation before proceeding.
-                    </rule>
-                    <rule>
-                        If the user confirms using the default value, proceed with it.
-                    </rule>
-                    <rule>
-                        If the user rejects the default value or wants to customize it, ask them to provide a specific value.
-                    </rule>
-                    <rule>
+                        If a tool parameter has a default value and the user does not provide it, suggest the default value and ask for user confirmation before proceeding (display all values for session).
+                        - If the user confirms using the default value, proceed with it.
+                        - If the user rejects the default value or wants to customize it, ask them to provide a specific value.
+                            
                         Only call a tool when all required (non-default) parameters are available and confirmed.
                     </rule>
-                    <rule>
-                        After completing a schedule creation or modification, present the user with the key information in a clear table format, including:
-                        - Start time of each irrigation event (in human-readable datetime)
-                        - Duration of irrigation (in seconds or minutes)
-                        - EC setpoint
-                        - pH setpoint
-
-                        The table should have columns: "Start Time", "Duration", "EC", and "pH". Each irrigation event must be listed as one row.
-                    </rule>
                 </rules>
+                            
+                <agent_state>
+                    <controller_id>{controller_id}</controller_id>
+                    <area_id>{area_id}</area_id>
+                    <program_id>{program_id}</program_id>
+                </agent_state>
             </agent_instruction>
         """),
+        goal= """Return results in a clear, structured tabular format containing detailed data fields relevant to the executed request.
+            <result_structure>
+                <table_columns>
+                <column name="Start Time (dtstart)" />
+                <column name="Irrigation Duration (seconds)" />
+                <column name="EC Setpoint" />
+                <column name="pH Setpoint" />
+                </table_columns>
+            </result_structure>
+        """,
+        session_state={"controller_id": "", "area_id": "", "program_id": ""},
         model=Gemini(id="gemini-2.5-flash"),
         storage=storage,
         # memory=memory,
         # enable_agentic_memory=True,
         add_history_to_messages=True,
-        num_history_runs=20,
+        num_history_runs=5,
         read_chat_history=True,
-        # retries=3,
+        retries=3,
         markdown=True,
         add_datetime_to_instructions=True,
         timezone_identifier="Asia/Ho_Chi_Minh",
